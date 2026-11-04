@@ -28,3 +28,7 @@ references/
 # --- Regenerable / large data outputs (optional: uncomment to keep data out of the repo) ---
 # data/output/
 # **/_scratch/
+
+
+# --- Meeting notes ---
+meetingNotes/
