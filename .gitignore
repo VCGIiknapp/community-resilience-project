@@ -1,0 +1,28 @@
+# --- Secrets & private infrastructure paths (never commit) ---
+# Census API key
+config/CensusAPI.txt
+# Real UNC/network paths; commit network_paths.example.json as the template instead
+config/network_paths.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+
+# --- GIS: entire ArcGIS Pro project / geodatabase kept out of the repo ---
+gis/
+
+# --- Oversized reference (exceeds GitHub's 100 MB limit; publicly available from OECD) ---
+references/OECD (2008) - Handbook on Constructing Composite Indicators Methodology and UserGuide - 42495745.pdf
+
+# --- Regenerable / large data outputs (optional: uncomment to keep data out of the repo) ---
+# data/output/
+# **/_scratch/

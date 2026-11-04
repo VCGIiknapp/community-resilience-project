@@ -1,0 +1,4 @@
+{
+  "censusKeyFile": "//SERVER/share/path/to/CensusAPI.txt",
+  "crosswalkTable": "//SERVER/share/path/to/Database.sde/SchemaName.FeatureClassName"
+}

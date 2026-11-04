@@ -1,0 +1,942 @@
+{
+ "_comment": "Auto-extracted ACS variables for CRI race/ethnicity/age/sex disaggregation. Lists are verbatim from the prior script. kind=rate uses denominators+numerators; kind=median uses a single median-dollar variable per group.",
+ "bipoc_member_labels": [
+  "Asian/ Asian American",
+  "Black/ African American",
+  "Hispanic/ Latin(a/o/x)",
+  "Indigenous American/ Alaskan",
+  "Indigenous Hawaiian/ Pacific Islanders",
+  "Additional Race Group",
+  "Multiracial"
+ ],
+ "suppression_min_denominator": 25,
+ "indicators": {
+  "Income": {
+   "indicator_label": "Supportive Income",
+   "model_key": "SupportiveIncome",
+   "kind": "rate",
+   "build_bipoc": false,
+   "groups": [
+    {
+     "label": "Under 18",
+     "denominators": [
+      "B17024_002E",
+      "B17024_015E",
+      "B17024_028E"
+     ],
+     "numerators": [
+      "B17024_011E",
+      "B17024_012E",
+      "B17024_013E",
+      "B17024_014E",
+      "B17024_024E",
+      "B17024_025E",
+      "B17024_026E",
+      "B17024_027E",
+      "B17024_037E",
+      "B17024_038E",
+      "B17024_039E",
+      "B17024_040E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B17024_106E",
+      "B17024_119E"
+     ],
+     "numerators": [
+      "B17024_115E",
+      "B17024_116E",
+      "B17024_117E",
+      "B17024_118E",
+      "B17024_128E",
+      "B17024_129E",
+      "B17024_130E",
+      "B17024_131E"
+     ]
+    }
+   ]
+  },
+  "Employment": {
+   "indicator_label": "Employment",
+   "model_key": "Employment",
+   "kind": "rate",
+   "build_bipoc": true,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "denominators": [
+      "C23002D_004E",
+      "C23002D_011E",
+      "C23002D_017E",
+      "C23002D_024E"
+     ],
+     "numerators": [
+      "C23002D_005E",
+      "C23002D_007E",
+      "C23002D_012E",
+      "C23002D_018E",
+      "C23002D_020E",
+      "C23002D_025E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "denominators": [
+      "C23002B_004E",
+      "C23002B_011E",
+      "C23002B_017E",
+      "C23002B_024E"
+     ],
+     "numerators": [
+      "C23002B_005E",
+      "C23002B_007E",
+      "C23002B_012E",
+      "C23002B_018E",
+      "C23002B_020E",
+      "C23002B_025E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "denominators": [
+      "C23002I_004E",
+      "C23002I_011E",
+      "C23002I_017E",
+      "C23002I_024E"
+     ],
+     "numerators": [
+      "C23002I_005E",
+      "C23002I_007E",
+      "C23002I_012E",
+      "C23002I_018E",
+      "C23002I_020E",
+      "C23002I_025E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "denominators": [
+      "C23002C_004E",
+      "C23002C_011E",
+      "C23002C_017E",
+      "C23002C_024E"
+     ],
+     "numerators": [
+      "C23002C_005E",
+      "C23002C_007E",
+      "C23002C_012E",
+      "C23002C_018E",
+      "C23002C_020E",
+      "C23002C_025E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "denominators": [
+      "C23002E_004E",
+      "C23002E_011E",
+      "C23002E_017E",
+      "C23002E_024E"
+     ],
+     "numerators": [
+      "C23002E_005E",
+      "C23002E_007E",
+      "C23002E_012E",
+      "C23002E_018E",
+      "C23002E_020E",
+      "C23002E_025E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "denominators": [
+      "C23002A_004E",
+      "C23002A_011E",
+      "C23002A_017E",
+      "C23002A_024E"
+     ],
+     "numerators": [
+      "C23002A_005E",
+      "C23002A_007E",
+      "C23002A_012E",
+      "C23002A_018E",
+      "C23002A_020E",
+      "C23002A_025E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "denominators": [
+      "C23002F_004E",
+      "C23002F_011E",
+      "C23002F_017E",
+      "C23002F_024E"
+     ],
+     "numerators": [
+      "C23002F_005E",
+      "C23002F_007E",
+      "C23002F_012E",
+      "C23002F_018E",
+      "C23002F_020E",
+      "C23002F_025E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "denominators": [
+      "C23002G_004E",
+      "C23002G_011E",
+      "C23002G_017E",
+      "C23002G_024E"
+     ],
+     "numerators": [
+      "C23002G_005E",
+      "C23002G_007E",
+      "C23002G_012E",
+      "C23002G_018E",
+      "C23002G_020E",
+      "C23002G_025E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B23001_074E",
+      "B23001_079E",
+      "B23001_084E",
+      "B23001_160E",
+      "B23001_165E",
+      "B23001_170E"
+     ],
+     "numerators": [
+      "B23001_075E",
+      "B23001_080E",
+      "B23001_085E",
+      "B23001_161E",
+      "B23001_166E",
+      "B23001_171E"
+     ]
+    },
+    {
+     "label": "Male",
+     "denominators": [
+      "B23001_004E",
+      "B23001_011E",
+      "B23001_018E",
+      "B23001_025E",
+      "B23001_032E",
+      "B23001_039E",
+      "B23001_046E",
+      "B23001_053E",
+      "B23001_060E",
+      "B23001_067E",
+      "B23001_074E",
+      "B23001_079E",
+      "B23001_084E"
+     ],
+     "numerators": [
+      "B23001_005E",
+      "B23001_007E",
+      "B23001_012E",
+      "B23001_014E",
+      "B23001_019E",
+      "B23001_021E",
+      "B23001_026E",
+      "B23001_028E",
+      "B23001_033E",
+      "B23001_035E",
+      "B23001_040E",
+      "B23001_042E",
+      "B23001_047E",
+      "B23001_049E",
+      "B23001_054E",
+      "B23001_056E",
+      "B23001_061E",
+      "B23001_063E",
+      "B23001_068E",
+      "B23001_070E",
+      "B23001_075E",
+      "B23001_080E",
+      "B23001_085E"
+     ]
+    },
+    {
+     "label": "Female",
+     "denominators": [
+      "B23001_090E",
+      "B23001_097E",
+      "B23001_104E",
+      "B23001_111E",
+      "B23001_118E",
+      "B23001_125E",
+      "B23001_132E",
+      "B23001_139E",
+      "B23001_146E",
+      "B23001_153E",
+      "B23001_160E",
+      "B23001_165E",
+      "B23001_170E"
+     ],
+     "numerators": [
+      "B23001_091E",
+      "B23001_093E",
+      "B23001_098E",
+      "B23001_100E",
+      "B23001_105E",
+      "B23001_107E",
+      "B23001_112E",
+      "B23001_114E",
+      "B23001_119E",
+      "B23001_121E",
+      "B23001_126E",
+      "B23001_128E",
+      "B23001_133E",
+      "B23001_135E",
+      "B23001_140E",
+      "B23001_142E",
+      "B23001_147E",
+      "B23001_149E",
+      "B23001_154E",
+      "B23001_156E",
+      "B23001_161E",
+      "B23001_166E",
+      "B23001_171E"
+     ]
+    }
+   ]
+  },
+  "Median Household Income": {
+   "indicator_label": "Median Household Income",
+   "model_key": "MedianHouseholdIncome",
+   "kind": "median",
+   "build_bipoc": false,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "variables": [
+      "B19013D_001E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "variables": [
+      "B19013B_001E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "variables": [
+      "B19013I_001E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "variables": [
+      "B19013C_001E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "variables": [
+      "B19013E_001E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "variables": [
+      "B19013A_001E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "variables": [
+      "B19013F_001E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "variables": [
+      "B19013G_001E"
+     ]
+    }
+   ]
+  },
+  "High School Education": {
+   "indicator_label": "High School Education",
+   "model_key": "HighSchoolEducation",
+   "kind": "rate",
+   "build_bipoc": true,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "denominators": [
+      "C15002D_001E"
+     ],
+     "numerators": [
+      "C15002D_004E",
+      "C15002D_005E",
+      "C15002D_006E",
+      "C15002D_009E",
+      "C15002D_010E",
+      "C15002D_011E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "denominators": [
+      "C15002B_001E"
+     ],
+     "numerators": [
+      "C15002B_004E",
+      "C15002B_005E",
+      "C15002B_006E",
+      "C15002B_009E",
+      "C15002B_010E",
+      "C15002B_011E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "denominators": [
+      "C15002I_001E"
+     ],
+     "numerators": [
+      "C15002I_004E",
+      "C15002I_005E",
+      "C15002I_006E",
+      "C15002I_009E",
+      "C15002I_010E",
+      "C15002I_011E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "denominators": [
+      "C15002C_001E"
+     ],
+     "numerators": [
+      "C15002C_004E",
+      "C15002C_005E",
+      "C15002C_006E",
+      "C15002C_009E",
+      "C15002C_010E",
+      "C15002C_011E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "denominators": [
+      "C15002E_001E"
+     ],
+     "numerators": [
+      "C15002E_004E",
+      "C15002E_005E",
+      "C15002E_006E",
+      "C15002E_009E",
+      "C15002E_010E",
+      "C15002E_011E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "denominators": [
+      "C15002A_001E"
+     ],
+     "numerators": [
+      "C15002A_004E",
+      "C15002A_005E",
+      "C15002A_006E",
+      "C15002A_009E",
+      "C15002A_010E",
+      "C15002A_011E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "denominators": [
+      "C15002F_001E"
+     ],
+     "numerators": [
+      "C15002F_004E",
+      "C15002F_005E",
+      "C15002F_006E",
+      "C15002F_009E",
+      "C15002F_010E",
+      "C15002F_011E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "denominators": [
+      "C15002G_001E"
+     ],
+     "numerators": [
+      "C15002G_004E",
+      "C15002G_005E",
+      "C15002G_006E",
+      "C15002G_009E",
+      "C15002G_010E",
+      "C15002G_011E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B15001_035E",
+      "B15001_076E"
+     ],
+     "numerators": [
+      "B15001_039E",
+      "B15001_040E",
+      "B15001_041E",
+      "B15001_042E",
+      "B15001_079E",
+      "B15001_080E",
+      "B15001_081E",
+      "B15001_082E",
+      "B15001_083E"
+     ]
+    },
+    {
+     "label": "Male",
+     "denominators": [
+      "B15001_011E",
+      "B15001_019E",
+      "B15001_027E",
+      "B15001_035E"
+     ],
+     "numerators": [
+      "B15001_014E",
+      "B15001_015E",
+      "B15001_016E",
+      "B15001_017E",
+      "B15001_018E",
+      "B15001_022E",
+      "B15001_023E",
+      "B15001_024E",
+      "B15001_025E",
+      "B15001_026E",
+      "B15001_030E",
+      "B15001_031E",
+      "B15001_032E",
+      "B15001_033E",
+      "B15001_034E",
+      "B15001_038E",
+      "B15001_039E",
+      "B15001_040E",
+      "B15001_041E",
+      "B15001_042E"
+     ]
+    },
+    {
+     "label": "Female",
+     "denominators": [
+      "B15001_052E",
+      "B15001_060E",
+      "B15001_068E",
+      "B15001_076E"
+     ],
+     "numerators": [
+      "B15001_055E",
+      "B15001_056E",
+      "B15001_057E",
+      "B15001_058E",
+      "B15001_059E",
+      "B15001_063E",
+      "B15001_064E",
+      "B15001_065E",
+      "B15001_066E",
+      "B15001_067E",
+      "B15001_071E",
+      "B15001_072E",
+      "B15001_073E",
+      "B15001_074E",
+      "B15001_075E",
+      "B15001_079E",
+      "B15001_080E",
+      "B15001_081E",
+      "B15001_082E",
+      "B15001_083E"
+     ]
+    }
+   ]
+  },
+  "Health Insurance": {
+   "indicator_label": "Health Insurance",
+   "model_key": "HealthInsurance",
+   "kind": "rate",
+   "build_bipoc": true,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "denominators": [
+      "C27001D_001E"
+     ],
+     "numerators": [
+      "C27001D_003E",
+      "C27001D_006E",
+      "C27001D_009E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "denominators": [
+      "C27001B_001E"
+     ],
+     "numerators": [
+      "C27001B_003E",
+      "C27001B_006E",
+      "C27001B_009E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "denominators": [
+      "C27001I_001E"
+     ],
+     "numerators": [
+      "C27001I_003E",
+      "C27001I_006E",
+      "C27001I_009E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "denominators": [
+      "C27001C_001E"
+     ],
+     "numerators": [
+      "C27001C_003E",
+      "C27001C_006E",
+      "C27001C_009E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "denominators": [
+      "C27001E_001E"
+     ],
+     "numerators": [
+      "C27001E_003E",
+      "C27001E_006E",
+      "C27001E_009E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "denominators": [
+      "C27001A_001E"
+     ],
+     "numerators": [
+      "C27001A_003E",
+      "C27001A_006E",
+      "C27001A_009E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "denominators": [
+      "C27001F_001E"
+     ],
+     "numerators": [
+      "C27001F_003E",
+      "C27001F_006E",
+      "C27001F_009E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "denominators": [
+      "C27001G_001E"
+     ],
+     "numerators": [
+      "C27001G_003E",
+      "C27001G_006E",
+      "C27001G_009E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B27001_024E",
+      "B27001_027E",
+      "B27001_052E",
+      "B27001_055E"
+     ],
+     "numerators": [
+      "B27001_025E",
+      "B27001_028E",
+      "B27001_053E",
+      "B27001_056E"
+     ]
+    },
+    {
+     "label": "Under 18",
+     "denominators": [
+      "B27001_003E",
+      "B27001_006E",
+      "B27001_031E",
+      "B27001_034E"
+     ],
+     "numerators": [
+      "B27001_004E",
+      "B27001_007E",
+      "B27001_032E",
+      "B27001_035E"
+     ]
+    },
+    {
+     "label": "Male",
+     "denominators": [
+      "B27001_002E"
+     ],
+     "numerators": [
+      "B27001_004E",
+      "B27001_007E",
+      "B27001_010E",
+      "B27001_013E",
+      "B27001_016E",
+      "B27001_019E",
+      "B27001_022E",
+      "B27001_025E",
+      "B27001_028E"
+     ]
+    },
+    {
+     "label": "Female",
+     "denominators": [
+      "B27001_030E"
+     ],
+     "numerators": [
+      "B27001_032E",
+      "B27001_035E",
+      "B27001_038E",
+      "B27001_041E",
+      "B27001_044E",
+      "B27001_047E",
+      "B27001_050E",
+      "B27001_053E",
+      "B27001_056E"
+     ]
+    }
+   ]
+  },
+  "Broadband Internet Subscription": {
+   "indicator_label": "Broadband Internet Subscription",
+   "model_key": "BroadbandInternet",
+   "kind": "rate",
+   "build_bipoc": true,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "denominators": [
+      "B28009D_001E"
+     ],
+     "numerators": [
+      "B28009D_004E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "denominators": [
+      "B28009B_001E"
+     ],
+     "numerators": [
+      "B28009B_004E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "denominators": [
+      "B28009I_001E"
+     ],
+     "numerators": [
+      "B28009I_004E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "denominators": [
+      "B28009C_001E"
+     ],
+     "numerators": [
+      "B28009C_004E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "denominators": [
+      "B28009E_001E"
+     ],
+     "numerators": [
+      "B28009E_004E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "denominators": [
+      "B28009A_001E"
+     ],
+     "numerators": [
+      "B28009A_004E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "denominators": [
+      "B28009F_001E"
+     ],
+     "numerators": [
+      "B28009F_004E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "denominators": [
+      "B28009G_001E"
+     ],
+     "numerators": [
+      "B28009G_004E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B28005_014E"
+     ],
+     "numerators": [
+      "B28005_017E"
+     ]
+    },
+    {
+     "label": "Under 18",
+     "denominators": [
+      "B28005_002E"
+     ],
+     "numerators": [
+      "B28005_005E"
+     ]
+    }
+   ]
+  },
+  "Owner Occupancy Rate": {
+   "indicator_label": "Owner-Occupied Homes",
+   "model_key": "OwnerOccupiedHomes",
+   "kind": "rate",
+   "build_bipoc": true,
+   "groups": [
+    {
+     "label": "Asian/ Asian American",
+     "denominators": [
+      "B25003D_001E"
+     ],
+     "numerators": [
+      "B25003D_002E"
+     ]
+    },
+    {
+     "label": "Black/ African American",
+     "denominators": [
+      "B25003B_001E"
+     ],
+     "numerators": [
+      "B25003B_002E"
+     ]
+    },
+    {
+     "label": "Hispanic/ Latin(a/o/x)",
+     "denominators": [
+      "B25003I_001E"
+     ],
+     "numerators": [
+      "B25003I_002E"
+     ]
+    },
+    {
+     "label": "Indigenous American/ Alaskan",
+     "denominators": [
+      "B25003C_001E"
+     ],
+     "numerators": [
+      "B25003C_002E"
+     ]
+    },
+    {
+     "label": "Indigenous Hawaiian/ Pacific Islanders",
+     "denominators": [
+      "B25003E_001E"
+     ],
+     "numerators": [
+      "B25003E_002E"
+     ]
+    },
+    {
+     "label": "White/ European American",
+     "denominators": [
+      "B25003A_001E"
+     ],
+     "numerators": [
+      "B25003A_002E"
+     ]
+    },
+    {
+     "label": "Additional Race Group",
+     "denominators": [
+      "B25003F_001E"
+     ],
+     "numerators": [
+      "B25003F_002E"
+     ]
+    },
+    {
+     "label": "Multiracial",
+     "denominators": [
+      "B25003G_001E"
+     ],
+     "numerators": [
+      "B25003G_002E"
+     ]
+    },
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B25007_009E",
+      "B25007_010E",
+      "B25007_011E",
+      "B25007_019E",
+      "B25007_020E",
+      "B25007_021E"
+     ],
+     "numerators": [
+      "B25007_009E",
+      "B25007_010E",
+      "B25007_011E"
+     ]
+    }
+   ]
+  },
+  "Vehicle Access": {
+   "indicator_label": "Vehicle Access",
+   "model_key": "VehicleAccess",
+   "kind": "rate",
+   "build_bipoc": false,
+   "groups": [
+    {
+     "label": "Over 65",
+     "denominators": [
+      "B25045_006E",
+      "B25045_010E",
+      "B25045_015E",
+      "B25045_019E"
+     ],
+     "numerators": [
+      "B25045_010E",
+      "B25045_019E"
+     ]
+    }
+   ]
+  }
+ }
+}
