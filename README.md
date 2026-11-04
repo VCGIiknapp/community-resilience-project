@@ -1,6 +1,6 @@
 # Vermont Community Resilience Index (VT CRI) — Project Summary
 
-*Distilled overview prepared 2026-11-03 from the project's own methodology, user guide, variable appendices, and the current production ETL script. Intended as a single orientation document for anyone inheriting or evaluating this project.*
+*Distilled overview prepared from the project's own methodology, user guide, variable appendices, and the current production ETL script. Intended as a single orientation document for anyone inheriting or evaluating this project.*
 
 ---
 
