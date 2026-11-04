@@ -84,7 +84,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def output_path(stem):
     """Build an output filepath: '<OUTPUT_DIR>/<stem><PERIOD_LABEL>.xlsx'.
-    e.g. output_path('tractsIndexGeometric') -> .../2019-2023/tractsIndexGeometric2019-2023.xlsx"""
+    e.g. output_path('townsIndexGeometric') -> .../2019-2023/townsIndexGeometric2019-2023.xlsx"""
     return os.path.join(OUTPUT_DIR, f"{stem}{PERIOD_LABEL}.xlsx")
 
 # Scratch location for intermediate/debug dumps (kept out of the deliverable dir).
@@ -149,9 +149,7 @@ dataset = "acs/acs5"
 baseUrl = "/".join([censusDataURL, year, dataset])
 acsDatasourceFields = 'NAME,B01003_001E'
 # * indicates we are using all counties
-geographyVariables = {'tract': {'boundaries': 'state:50',
-                                'columns': {0: 'name', 1: 'population', 2: 'stateKey', 3: 'countyKey', 4: 'censusTract'}},
-                      'county subdivision': {'boundaries': 'state:50',
+geographyVariables = {'county subdivision': {'boundaries': 'state:50',
                                               'columns': {0: 'name', 1: 'population', 2: 'stateKey', 3: 'countyKey', 4: 'townFIPS'}},
                       'county': {'boundaries': 'state:50',
                                  'columns': {0: 'name', 1: 'population', 2: 'stateKey', 3: 'countyKey'}},
@@ -177,11 +175,7 @@ for geography in geographyVariables:
         geographiesDataFrame = pd.DataFrame(geographies[1:])
         columns = geographyVariables[geography]['columns']
         geographiesDataFrame = geographiesDataFrame.rename(columns=columns)
-        if geography == 'tract':
-            geographiesDataFrame['TractGEOID'] = (geographiesDataFrame['stateKey'] +
-                                                    geographiesDataFrame['countyKey'] +
-                                                    geographiesDataFrame['censusTract'])
-        elif geography == 'county subdivision':
+        if geography == 'county subdivision':
             geographiesDataFrame['TownGEOID'] = (geographiesDataFrame['stateKey'] +
                                                     geographiesDataFrame['countyKey'] +
                                                     geographiesDataFrame['townFIPS'])
@@ -214,21 +208,18 @@ for geography in geographyVariables:
 indicators = {'SupportiveIncome':{'variables': {"numerators": ["C17002_008E"],
                                                 "denominators": ["C17002_001E"]},
                                   'columnsForStats': {
-                                                      'tract': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 4: 'Census Tract'},
                                                       'county subdivision': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 4: 'townFIPS'},
                                                       'county': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 3: 'County Key'},
                                                       'statewide': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 2: 'State Key'}}},
               'WithoutPublicAssistance':{'variables': {"numerators": ["B19058_002E"],
                                                        "denominators": ["B19058_001E"]},
                                          'columnsForStats':{
-                                                            'tract': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 4: 'Census Tract'},
                                                             'county subdivision': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 4: 'townFIPS'},
                                                             'county': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 3: 'County Key'},
                                                             'statewide': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 2: 'State Key'}}},
               'Employment':{'variables': {"numerators": ["B23001_005E", "B23001_007E", "B23001_012E", "B23001_014E", "B23001_019E", "B23001_021E", "B23001_026E", "B23001_028E", "B23001_033E", "B23001_035E", "B23001_040E", "B23001_042E", "B23001_047E", "B23001_049E", "B23001_054E", "B23001_056E", "B23001_061E", "B23001_063E", "B23001_068E", "B23001_070E", "B23001_075E", "B23001_080E", "B23001_085E", "B23001_091E", "B23001_093E", "B23001_098E", "B23001_100E", "B23001_105E", "B23001_107E", "B23001_112E", "B23001_114E", "B23001_119E", "B23001_121E", "B23001_126E", "B23001_128E", "B23001_133E", "B23001_135E", "B23001_140E", "B23001_142E", "B23001_147E", "B23001_149E", "B23001_154E", "B23001_156E", "B23001_161E", "B23001_166E", "B23001_171E"],
                                           "denominators": ["B23001_004E", "B23001_011E", "B23001_018E", "B23001_025E", "B23001_032E", "B23001_039E", "B23001_046E", "B23001_053E", "B23001_060E", "B23001_067E", "B23001_074E", "B23001_079E", "B23001_084E", "B23001_090E", "B23001_097E", "B23001_104E", "B23001_111E", "B23001_118E", "B23001_125E", "B23001_132E", "B23001_139E", "B23001_146E", "B23001_153E", "B23001_160E", "B23001_165E", "B23001_170E"]},
                             'columnsForStats':{
-                                               'tract': {74: 'Census Tract'},
                                                'county subdivision': {74: 'townFIPS'},
                                                'county': {73: 'County Key'},
                                                'statewide': {72: 'State Key'}}},
@@ -240,56 +231,48 @@ indicators = {'SupportiveIncome':{'variables': {"numerators": ["C17002_008E"],
                                                       # frame means in _frame_weighted_value().
                                                       "weights": ["B19001_001E"]},
                                         'columnsForStats':{
-                                                           'tract': {0: 'Indicator Percentage', 3: 'Census Tract'},
                                                            'county subdivision': {0: 'Indicator Percentage', 3: 'townFIPS'},
                                                            'county': {0: 'County Indicator Mean', 2: 'County Key'},
                                                            'statewide': {0: 'Statewide Indicator Mean', 1: 'State Key'}}},
               'HighSchoolEducation':{'variables': {"numerators": ["B15001_014E", "B15001_015E", "B15001_016E", "B15001_017E", "B15001_018E", "B15001_022E", "B15001_023E", "B15001_024E", "B15001_025E", "B15001_026E", "B15001_030E", "B15001_031E", "B15001_032E", "B15001_033E", "B15001_034E", "B15001_038E", "B15001_039E", "B15001_040E", "B15001_041E", "B15001_042E", "B15001_055E", "B15001_056E", "B15001_057E", "B15001_058E", "B15001_059E", "B15001_063E", "B15001_064E", "B15001_065E", "B15001_066E", "B15001_067E", "B15001_071E", "B15001_072E", "B15001_073E", "B15001_074E", "B15001_075E", "B15001_079E", "B15001_080E", "B15001_081E", "B15001_082E", "B15001_083E"],
                                                    "denominators": ["B15001_011E", "B15001_019E", "B15001_027E", "B15001_035E", "B15001_052E", "B15001_060E", "B15001_068E", "B15001_076E"]},
                                      'columnsForStats':{
-                                                        'tract': {50: 'Census Tract'},
                                                         'county subdivision': {50: 'townFIPS'},
                                                         'county': {49: 'County Key'},
                                                         'statewide': {48: 'State Key'}}},
               'HealthInsurance':{'variables': {"numerators": ["B27010_003E", "B27010_010E", "B27010_019E", "B27010_026E", "B27010_035E", "B27010_042E", "B27010_052E", "B27010_058E"],
                                                "denominators": ["B27010_001E"]},
                                  'columnsForStats':{
-                                                    'tract': {0: 'Indicator Denominator', 11: 'Census Tract'},
                                                     'county subdivision': {0: 'Indicator Denominator', 11: 'townFIPS'},
                                                     'county': {0: 'Indicator Denominator', 10: 'County Key'},
                                                     'statewide': {0: 'Indicator Denominator', 9: 'State Key'}}},
               'ManageableHousingCosts':{'variables': {"numerators": ["B25095_003E", "B25095_004E", "B25095_005E", "B25095_012E", "B25095_013E", "B25095_014E", "B25095_021E", "B25095_022E", "B25095_023E", "B25095_030E", "B25095_031E", "B25095_032E", "B25095_039E", "B25095_040E", "B25095_041E", "B25095_048E", "B25095_049E", "B25095_050E", "B25095_057E", "B25095_058E", "B25095_059E", "B25095_066E", "B25095_067E", "B25095_068E", "B25070_002E", "B25070_003E", "B25070_004E", "B25070_005E", "B25070_006E"],
                                                       "denominators": ["B25095_001E", "B25070_001E"]},
                                         'columnsForStats':{
-                                                           'tract': {33: 'Census Tract'},
                                                            'county subdivision': {33: 'townFIPS'},
                                                            'county': {32: 'County Key'},
                                                            'statewide': {31: 'State Key'}}},
               'BroadbandInternet':{'variables': {"numerators": ["B28005_005E", "B28005_011E", "B28005_017E"],
                                                  "denominators": ["B28005_001E"]},
                                    'columnsForStats':{
-                                                      'tract': {0: 'Indicator Denominator', 6: 'Census Tract'},
                                                       'county subdivision': {0: 'Indicator Denominator', 6: 'townFIPS'},
                                                       'county': {0: 'Indicator Denominator', 5: 'County Key'},
                                                       'statewide': {0: 'Indicator Denominator', 4: 'State Key'}}},
               'OwnerOccupiedHomes':{'variables': {"numerators": ["B25003_002E"],
                                                   "denominators": ["B25003_001E"]},
                                     'columnsForStats':{
-                                                       'tract': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 4: 'Census Tract'},
                                                        'county subdivision': {0: 'Indicator Denominator', 1:'Indicator Numerator', 4: 'townFIPS'},
                                                        'county': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 3: 'County Key'},
                                                        'statewide': {0: 'Indicator Denominator', 1: 'Indicator Numerator', 2: 'State Key'}}},
               'EnglishProficiency':{'variables': {"numerators": ["B16005_003E", "B16005_005E", "B16005_006E", "B16005_010E", "B16005_011E", "B16005_015E", "B16005_016E", "B16005_020E", "B16005_021E", "B16005_025E", "B16005_027E", "B16005_028E", "B16005_032E", "B16005_033E", "B16005_037E", "B16005_038E", "B16005_042E", "B16005_043E"],
                                                   "denominators": ["B16005_001E"]},
                                     'columnsForStats':{
-                                                       'tract': {0: 'Indicator Denominator', 21: 'Census Tract'},
                                                        'county subdivision': {0: 'Indicator Denominator', 21: 'townFIPS'},
                                                        'county': {0: 'Indicator Denominator', 20: 'County Key'},
                                                        'statewide': {0: 'Indicator Denominator', 19: 'State Key'}}},
               'VehicleAccess':{'variables': {"numerators": ["B25044_004E", "B25044_005E", "B25044_006E", "B25044_007E", "B25044_008E", "B25044_011E", "B25044_012E", "B25044_013E", "B25044_014E", "B25044_015E"],
                                              "denominators": ["B25044_001E"]},
                                'columnsForStats':{
-                                                  'tract': {0: 'Indicator Denominator', 13: 'Census Tract'},
                                                   'county subdivision': {0: 'Indicator Denominator', 13: 'townFIPS'},
                                                   'county': {0: 'Indicator Denominator', 12: 'County Key'},
                                                   'statewide': {0: 'Indicator Denominator', 11: 'State Key'}}},
@@ -302,8 +285,7 @@ indicators = {'SupportiveIncome':{'variables': {"numerators": ["C17002_008E"],
 # FOR NUMERATORS AND DENOMINATORS, IF len(DENOMINATOR) == 0, IT IS A COUNT, NOT A RATE
 # HERE ================
 # We added the Statewide dataset, and now need to address the num and denom...
-geographyDataFrameGeographyFieldIndex = {'tract': 3,
-                                   'county subdivision': 3,
+geographyDataFrameGeographyFieldIndex = {'county subdivision': 3,
                                    'county': 2,
                                    'statewide': 1}
 
@@ -460,11 +442,6 @@ for indicator in geographyDataframes:
                 currentDataFrame['PercentPerCapitaHSARank'] = currentDataFrame.groupby('HLTHSANAME')['PercentPerCapita'].rank(pct=True)*100
                 currentDataFrame['PercentPerCapitaHSASD'] = currentDataFrame.groupby('HLTHSANAME')['PercentPerCapita'].transform('std')
                 currentDataFrame['PercentPerCapitaHSAMean'] = _frame_weighted_rate(currentDataFrame, 'HLTHSANAME')
-            elif geography in ['tract']:
-                # Calculate grouby percent mean, percent rank, and percent stddev values for county
-                currentDataFrame['PercentPerCapitaCountyRank'] = currentDataFrame.groupby('CNTYCODE')['PercentPerCapita'].rank(pct=True)*100
-                currentDataFrame['PercentPerCapitaCountySD'] = currentDataFrame.groupby('CNTYCODE')['PercentPerCapita'].transform('std')
-                currentDataFrame['PercentPerCapitaCountyMean'] = currentDataFrame.groupby('CNTYCODE')['PercentPerCapita'].transform('mean')
             else:
                 # Calculate grouby percent rank values for county code
                 currentDataFrame['PercentPerCapitaCountyRank'] = currentDataFrame.groupby('CNTYCODE')['PercentPerCapita'].rank(pct=True)*100
@@ -529,11 +506,11 @@ for indicator in geographyDataframes:
         countyAggregateByCode = pd.to_numeric(coFrame.set_index('CNTYCODE')[coValCol], errors='coerce')
     else:
         countyAggregateByCode = pd.Series(dtype=float)
-    for geography in ['tract', 'county subdivision']:
+    for geography in ['county subdivision']:
         df = geographyDataframes[indicator].get(geography)
         if df is None:
             continue
-        # county code is positions 2:5 of the GEOID (JoinKey) for both tracts and towns
+        # county code is positions 2:5 of the GEOID (JoinKey) for towns
         df['AreaFrameMeanStatewide'] = statewideAggregate
         df['AreaFrameMeanCounty'] = df['JoinKey'].astype(str).str[2:5].map(countyAggregateByCode)
         geographyDataframes[indicator][geography] = df
@@ -555,13 +532,13 @@ _SD_GROUP_COLS = {  # SD column -> (group-key column, value column)
     'IndicatorHSASD':              ('HLTHSANAME',   'Numerator'),
 }
 for indicator in geographyDataframes:
-    for geography in ['tract', 'county subdivision']:
+    for geography in ['county subdivision']:
         df = geographyDataframes[indicator].get(geography)
         if df is None:
             continue
         for sdCol, (keyCol, valCol) in _SD_GROUP_COLS.items():
             if sdCol not in df.columns or keyCol not in df.columns:
-                continue  # e.g. tract frames have no district/HSA grouping
+                continue
             sd = pd.to_numeric(df[sdCol], errors='coerce')
             zeroGroups = df.loc[sd == 0, keyCol].dropna().unique()
             for g in zeroGroups:
@@ -593,7 +570,7 @@ def _smd(mean_col, value_col, std_col):
 
 for indicator in geographyDataframes:
     for geography in geographyDataframes[indicator]:
-        if geography in ['tract', 'county subdivision']:
+        if geography == 'county subdivision':
             currentDataFrame = geographyDataframes[indicator][geography]
             # Area-frame MEAN terms (statewide/county = ACS aggregate; district/HSA =
             # municipality average); STD terms are the spread of unit values in the
@@ -626,11 +603,11 @@ for indicator in geographyDataframes:
 # Initialize a list to hold data for our new DataFrame
 thematic_data_list = []
 
-# Define themes and their associated indicators
+# Single composite index: one "Overall" theme containing ALL indicators.
+# (The former Socioeconomic / Housing sub-indices were removed -- project decision,
+# 2026-11-04. There is now exactly one index.)
 themes = {
     'Overall': list(geographyDataframes.keys()), # 'Overall' includes all indicators
-    'Socioeconomic': ['SupportiveIncome', 'WithoutPublicAssistance', 'Employment', 'MedianHouseholdIncome', 'HighSchoolEducation', 'HealthInsurance', 'ManageableHousingCosts'],
-    'Housing': ['BroadbandInternet', 'OwnerOccupiedHomes', 'EnglishProficiency', 'VehicleAccess']
 }
 
 # Define the different ranking and SMD contexts we want to analyze
@@ -651,7 +628,7 @@ count_contexts = {
 
 # --- Main Loop ---
 for theme_name, indicator_list in themes.items():
-    for geography in ['tract', 'county subdivision']:
+    for geography in ['county subdivision']:
         
         unit_metrics = {}
 
@@ -738,7 +715,7 @@ thematicDataFrame.to_csv(os.path.join(SCRATCH_DIR, 'thematicDataFrame.csv'), ind
 
 
 # =============================================================================
-# BUILD PUBLISHED INDEX TABLES  (tractsIndexGeometric / townsIndexGeometric)
+# BUILD PUBLISHED INDEX TABLE  (townsIndexGeometric)
 # -----------------------------------------------------------------------------
 # Path A: wire the published index deliverables to the LIVE data model
 #   - thematicDataFrame            -> per-theme index scores (ThematicIndex_*)
@@ -766,10 +743,6 @@ INDICATOR_PREFIX = {
     'EnglishProficiency':      'englishProficiency',
     'VehicleAccess':           'vehicleAccess',
 }
-
-# published theme labels + stable sort order for the application
-THEME_LABEL = {'Overall': 'Overall Theme', 'Socioeconomic': 'Socioeconomic Theme', 'Housing': 'Housing Theme'}
-THEME_SORT = {'Overall Theme': 1, 'Socioeconomic Theme': 2, 'Housing Theme': 3}
 
 # context -> (rate-indicator rank col, count-indicator rank col) in geographyDataframes
 RANK_COLS = {
@@ -816,15 +789,10 @@ def build_indicator_percentile_wide(geography, contexts):
 
 # geography -> build spec
 INDEX_SPECS = {
-    'tract': {
-        'contexts': ['Statewide', 'County'],
-        'stem': 'tractsIndexGeometric',
-        'id_cols': ['Index Theme', 'Census Tract', 'County', 'Tract GEOID', 'Data Years', 'Tract Population'],
-    },
     'county subdivision': {
         'contexts': ['Statewide', 'County', 'District', 'HSA'],
         'stem': 'townsIndexGeometric',
-        'id_cols': ['Index Theme', 'Town Name', 'County', 'VDH District', 'Hospital Service Area',
+        'id_cols': ['Town Name', 'County', 'VDH District', 'Hospital Service Area',
                     'Town GEOID', 'Data Years', 'Town Population'],
     },
 }
@@ -832,9 +800,8 @@ INDEX_SPECS = {
 for geography, spec in INDEX_SPECS.items():
     contexts = spec['contexts']
 
-    # 1) theme index scores from thematicDataFrame
+    # 1) index scores from thematicDataFrame (single composite index -> one row/unit)
     tdf = thematicDataFrame[thematicDataFrame['Geography'] == geography].copy()
-    tdf['Index Theme'] = tdf['Theme'].map(THEME_LABEL)
     score_renames = {f'ThematicIndex_{ctx}': INDEX_SCORE_LABEL[ctx] for ctx in contexts
                      if f'ThematicIndex_{ctx}' in tdf.columns}
     tdf = tdf.rename(columns=score_renames)
@@ -846,17 +813,11 @@ for geography, spec in INDEX_SPECS.items():
 
     # 3) Name / Population / geography metadata from the denominators frame
     denom = geographyDenominatorsDataframes[geography].copy()
-    if geography == 'tract':
-        meta = denom[['TractGEOID', 'censusTract', 'countyName', 'population']].rename(
-            columns={'TractGEOID': 'GeographyUnit', 'censusTract': 'Census Tract',
-                     'countyName': 'County', 'population': 'Tract Population'})
-        geoid_out = 'Tract GEOID'
-    else:
-        meta = denom[['TownGEOID', 'TWNNMEMC', 'countyName', 'VDHDSTRTNME', 'HSPLSANAME', 'population']].rename(
-            columns={'TownGEOID': 'GeographyUnit', 'TWNNMEMC': 'Town Name', 'countyName': 'County',
-                     'VDHDSTRTNME': 'VDH District', 'HSPLSANAME': 'Hospital Service Area',
-                     'population': 'Town Population'})
-        geoid_out = 'Town GEOID'
+    meta = denom[['TownGEOID', 'TWNNMEMC', 'countyName', 'VDHDSTRTNME', 'HSPLSANAME', 'population']].rename(
+        columns={'TownGEOID': 'GeographyUnit', 'TWNNMEMC': 'Town Name', 'countyName': 'County',
+                 'VDHDSTRTNME': 'VDH District', 'HSPLSANAME': 'Hospital Service Area',
+                 'population': 'Town Population'})
+    geoid_out = 'Town GEOID'
     meta['County'] = meta['County'].map(_county_with_suffix)
 
     merged = tdf.merge(meta, on='GeographyUnit', how='left')
@@ -864,22 +825,21 @@ for geography, spec in INDEX_SPECS.items():
         merged = merged.merge(wide, left_on='GeographyUnit', right_on='JoinKey', how='left')
     merged[geoid_out] = merged['GeographyUnit']
     merged['Data Years'] = DATA_YEARS
-    merged['Sort Index Theme'] = merged['Index Theme'].map(THEME_SORT).fillna(0).astype(int)
 
     pct_cols = [f'{prefix}{PCT_CTX_LABEL[ctx]}Percentile'
                 for prefix in INDICATOR_PREFIX.values() for ctx in contexts]
-    ordered = spec['id_cols'] + [INDEX_SCORE_LABEL[c] for c in contexts] + pct_cols + ['Sort Index Theme']
+    ordered = spec['id_cols'] + [INDEX_SCORE_LABEL[c] for c in contexts] + pct_cols
     out = merged.reindex(columns=ordered)
-    out = out.sort_values(['Sort Index Theme', 'County', spec['id_cols'][1]]).reset_index(drop=True)
+    out = out.sort_values(['County', 'Town Name']).reset_index(drop=True)
     out.to_excel(output_path(spec['stem']), index=False)
     print(f"Wrote {output_path(spec['stem'])}  ({out.shape[0]} rows, {out.shape[1]} cols)")
 
 
 # =============================================================================
-# BUILD PUBLISHED INDICATOR TABLES  (tractsIndicators / townsIndicators)
+# BUILD PUBLISHED INDICATOR TABLE  (townsIndicators)
 # -----------------------------------------------------------------------------
-# Stacked long format. Each indicator is emitted twice: once under "Overall Theme"
-# and once under its own theme (Socioeconomic/Housing), matching the prior schema.
+# Stacked long format. Each indicator is emitted ONCE under the single "Overall
+# Theme" (the Socioeconomic/Housing sub-themes were removed -- one index now).
 # Wired to geographyDataframes (value/mean/percentile/SMD) + denominators (name/pop).
 # VALIDATION REQUIRED before publishing (diff vs data/output/2018-2022/*Indicators*).
 
@@ -897,12 +857,6 @@ INDICATOR_DISPLAY = {
     'EnglishProficiency':      'English Proficiency',
     'VehicleAccess':           'Vehicle Access',
 }
-INDICATOR_THEME = {k: ('Socioeconomic Theme' if k in
-                       ('SupportiveIncome', 'WithoutPublicAssistance', 'Employment', 'MedianHouseholdIncome',
-                        'HighSchoolEducation', 'HealthInsurance', 'ManageableHousingCosts')
-                       else 'Housing Theme')
-                   for k in INDICATOR_DISPLAY}
-
 # per-context source columns in geographyDataframes: (rate-indicator col, count-indicator col)
 IND_VALUE = ('PercentPerCapita', 'Numerator')
 # Area-frame indicator means (methodology Step 1): statewide & county use the ACS
@@ -923,7 +877,7 @@ def _numcol(df, name):
 
 def build_indicator_stack(geography, contexts, geo_title):
     """Generic stacked indicator frame with _value/_mean_<ctx>/_pctl_<ctx>/_smd_<ctx>,
-    Indicator, Index Theme (Overall + own), Sort Index Theme, JoinKey."""
+    Indicator, JoinKey (one row per indicator x unit -- single composite index)."""
     frames = []
     for indicator in INDICATOR_DISPLAY:
         df = geographyDataframes.get(indicator, {}).get(geography)
@@ -932,7 +886,6 @@ def build_indicator_stack(geography, contexts, geo_title):
         is_count = 'IndicatorRank' in df.columns
         base = pd.DataFrame({'JoinKey': df['JoinKey'].values})
         base['Indicator'] = INDICATOR_DISPLAY[indicator]
-        base['_theme'] = INDICATOR_THEME[indicator]
         v_rate, v_count = IND_VALUE
         base['_value'] = _numcol(df, v_count if is_count else v_rate).round(2).values
         for ctx in contexts:
@@ -942,33 +895,10 @@ def build_indicator_stack(geography, contexts, geo_title):
             base[f'_pctl_{ctx}'] = _numcol(df, p_count if is_count else p_rate).round(2).values
             base[f'_smd_{ctx}'] = _numcol(df, f'{geo_title}{ctx}SMD').round(2).values
         frames.append(base)
-    stacked = pd.concat(frames, ignore_index=True)
-    overall = stacked.copy(); overall['Index Theme'] = 'Overall Theme'
-    own = stacked.copy();     own['Index Theme'] = own['_theme']
-    full = pd.concat([overall, own], ignore_index=True)
-    full['Sort Index Theme'] = full['Index Theme'].map(THEME_SORT).fillna(0).astype(int)
+    full = pd.concat(frames, ignore_index=True)
     full['Data Years'] = DATA_YEARS
     return full
 
-
-# ---- Tract indicator table ----
-tdenom = geographyDenominatorsDataframes['tract'][['TractGEOID', 'censusTract', 'countyName', 'population']].rename(
-    columns={'TractGEOID': 'JoinKey', 'censusTract': 'Census Tract', 'countyName': 'County', 'population': 'Tract Population'})
-tdenom['County'] = tdenom['County'].map(_county_with_suffix)
-tractsIndicators = build_indicator_stack('tract', ['Statewide', 'County'], 'Tract').merge(tdenom, on='JoinKey', how='left')
-tractsIndicators = tractsIndicators.rename(columns={
-    'JoinKey': 'Tract GEOID',
-    '_mean_Statewide': 'Statewide Indicator Mean', '_mean_County': 'County Indicator Mean',
-    '_value': 'Tract Indicator Percentage',
-    '_pctl_Statewide': 'Tract Statewide Percentile', '_pctl_County': 'Tract County Percentile',
-    '_smd_Statewide': 'Tract Statewide Standard Mean Difference', '_smd_County': 'Tract County Standard Mean Difference'})
-tractsIndicators = tractsIndicators.reindex(columns=[
-    'Indicator', 'Index Theme', 'County', 'Statewide Indicator Mean', 'County Indicator Mean', 'Census Tract',
-    'Tract GEOID', 'Data Years', 'Tract Population', 'Tract Indicator Percentage', 'Tract Statewide Percentile',
-    'Tract County Percentile', 'Tract Statewide Standard Mean Difference', 'Tract County Standard Mean Difference',
-    'Sort Index Theme']).sort_values(['Sort Index Theme', 'Indicator', 'County']).reset_index(drop=True)
-tractsIndicators.to_excel(output_path('tractsIndicators'), index=False)
-print(f"Wrote {output_path('tractsIndicators')}  ({tractsIndicators.shape[0]} rows, {tractsIndicators.shape[1]} cols)")
 
 # ---- Town indicator table ----
 wdenom = geographyDenominatorsDataframes['county subdivision'][
@@ -988,33 +918,22 @@ townsIndicators = townsIndicators.rename(columns={
     '_smd_Statewide': 'Town Statewide Standard Mean Difference', '_smd_County': 'Town County Standard Mean Difference',
     '_smd_District': 'Town District Standard Mean Difference', '_smd_HSA': 'Town Hospital Standard Mean Difference'})
 townsIndicators = townsIndicators.reindex(columns=[
-    'Indicator', 'Index Theme', 'County', 'VDH District', 'Hospital Service Area', 'Statewide Indicator Mean',
+    'Indicator', 'County', 'VDH District', 'Hospital Service Area', 'Statewide Indicator Mean',
     'County Indicator Mean', 'District Indicator Mean', 'Hospital Indicator Mean', 'Town Name', 'Town GEOID',
     'Data Years', 'Town Population', 'Town Indicator Percentage', 'Town Statewide Percentile', 'Town County Percentile',
     'Town District Percentile', 'Town Hospital Percentile', 'Town Statewide Standard Mean Difference',
     'Town County Standard Mean Difference', 'Town District Standard Mean Difference',
-    'Town Hospital Standard Mean Difference', 'Sort Index Theme']).sort_values(
-    ['Sort Index Theme', 'Indicator', 'County', 'Town Name']).reset_index(drop=True)
+    'Town Hospital Standard Mean Difference']).sort_values(
+    ['Indicator', 'County', 'Town Name']).reset_index(drop=True)
 townsIndicators.to_excel(output_path('townsIndicators'), index=False)
 print(f"Wrote {output_path('townsIndicators')}  ({townsIndicators.shape[0]} rows, {townsIndicators.shape[1]} cols)")
 
 
 # =============================================================================
-# BUILD UNPOPULATED TABLES  (tractsUnpopulated / townsUnpopulated)
+# BUILD UNPOPULATED TABLE  (townsUnpopulated)
 # -----------------------------------------------------------------------------
 # Units with zero/null population, captured in the first loop before they were
 # dropped from the analysis frames.
-tractsUnpopulated = geographyUnpopulatedDataframes['tract'][['censusTract', 'countyName', 'TractGEOID', 'population']].copy()
-tractsUnpopulated['countyName'] = tractsUnpopulated['countyName'].map(_county_with_suffix)
-tractsUnpopulated['population'] = pd.to_numeric(tractsUnpopulated['population'], errors='coerce').fillna(0).astype(int)
-tractsUnpopulated['Data Years'] = DATA_YEARS
-tractsUnpopulated = tractsUnpopulated.rename(columns={
-    'censusTract': 'Census Tract', 'countyName': 'County', 'TractGEOID': 'Tract GEOID',
-    'population': 'Tract Population'}).reindex(columns=[
-    'Census Tract', 'County', 'Tract GEOID', 'Data Years', 'Tract Population'])
-tractsUnpopulated.to_excel(output_path('tractsUnpopulated'), index=False)
-print(f"Wrote {output_path('tractsUnpopulated')}  ({tractsUnpopulated.shape[0]} rows)")
-
 townsUnpopulated = geographyUnpopulatedDataframes['county subdivision'][
     ['TWNNMEMC', 'countyName', 'VDHDSTRTNME', 'HSPLSANAME', 'TownGEOID', 'population']].copy()
 townsUnpopulated['countyName'] = townsUnpopulated['countyName'].map(_county_with_suffix)
@@ -1298,10 +1217,10 @@ print("Wrote 4 disaggregated-demographics tables to", OUTPUT_DIR)
 # =============================================================================
 # END OF PIPELINE
 # -----------------------------------------------------------------------------
-# Deliverables written to OUTPUT_DIR:
-#   tractsIndexGeometric / townsIndexGeometric   (composite index)
-#   tractsIndicators / townsIndicators           (per-indicator + SMD)
-#   tractsUnpopulated / townsUnpopulated         (zero-population units)
+# Deliverables written to OUTPUT_DIR (municipalities only; tracts removed 2026-11-04):
+#   townsIndexGeometric                          (single composite index)
+#   townsIndicators                              (per-indicator + SMD)
+#   townsUnpopulated                             (zero-population units)
 #   countiesDisaggregated / statewideDisaggregated / districtsDisaggregated /
 #   hospitalsDisaggregated                       (race/ethnicity disaggregation)
 # Population-reference maps were removed from the product (project decision, 2026).

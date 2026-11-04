@@ -32,3 +32,7 @@ references/
 
 # --- Meeting notes ---
 meetingNotes/
+
+# --- Dashboard notes and JSON source
+dashboard/currentDesign.json
+dashboard/directions.md

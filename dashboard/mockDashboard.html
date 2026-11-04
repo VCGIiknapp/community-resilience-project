@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VT CRI — Mock Dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:#f9f9f7; --surface:#fcfcfb; --surface2:#ffffff;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+    --brand:#17773c; --brand2:#18c179; --brand-ink:#ffffff;
+    /* composite-index ordinal green ramp (Low -> High), light surface */
+    --c1:#dcf0e6; --c2:#86d0ab; --c3:#2fae79; --c4:#176f3b;
+    --c1-ink:#0b0b0b; --c2-ink:#0b0b0b; --c3-ink:#ffffff; --c4-ink:#ffffff;
+    /* diverging SMD poles */
+    --pos:#2a78d6; --neg:#e34948; --mid:#f0efec;
+    /* categorical (validated order) */
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+    --shadow:0 1px 2px rgba(11,11,11,.06), 0 2px 8px rgba(11,11,11,.05);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface2:#1f1f1e;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --brand:#17773c; --brand2:#18c179; --brand-ink:#ffffff;
+    --c1:#1d4a33; --c2:#2f8d5e; --c3:#3fb783; --c4:#8ed9b6;
+    --c1-ink:#f0efec; --c2-ink:#f0efec; --c3-ink:#0b0b0b; --c4-ink:#0b0b0b;
+    --pos:#3987e5; --neg:#e66767; --mid:#383835;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 2px 10px rgba(0,0,0,.35);
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
+  body {
+    background:var(--page); color:var(--ink);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  /* ---------- Header ---------- */
+  header.app {
+    background:linear-gradient(90deg,var(--brand),var(--brand2));
+    color:var(--brand-ink); padding:10px 18px;
+    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+    box-shadow:var(--shadow); position:sticky; top:0; z-index:40;
+  }
+  .brandblock { display:flex; align-items:center; gap:12px; min-width:0; }
+  .brandmark {
+    width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,.18);
+    display:grid; place-items:center; font-weight:700; font-size:16px; flex:0 0 auto;
+    border:1px solid rgba(255,255,255,.35);
+  }
+  .brandblock h1 { font-size:16px; margin:0; font-weight:650; letter-spacing:.2px; }
+  .brandblock p { margin:1px 0 0; font-size:11.5px; opacity:.9; }
+  .selectors { margin-left:auto; display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .sel { display:flex; flex-direction:column; gap:3px; }
+  .sel label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; opacity:.9; }
+  .sel select, .sel .segmented {
+    background:var(--surface); color:var(--ink); border:1px solid var(--border);
+    border-radius:7px; padding:6px 9px; font:inherit; font-size:12.5px; min-width:130px; cursor:pointer;
+  }
+  .segmented { display:inline-flex; padding:3px; gap:3px; min-width:0; }
+  .segmented button {
+    border:0; background:transparent; color:var(--ink2); font:inherit; font-size:12px;
+    padding:4px 11px; border-radius:5px; cursor:pointer; white-space:nowrap;
+  }
+  .segmented button[aria-pressed="true"] { background:var(--brand); color:#fff; font-weight:600; }
+  .themebtn {
+    background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.4);
+    border-radius:7px; width:34px; height:34px; cursor:pointer; font-size:15px;
+  }
+  /* ---------- Tabs ---------- */
+  nav.tabs { display:flex; gap:2px; background:var(--surface); border-bottom:1px solid var(--border); padding:0 14px; position:sticky; top:60px; z-index:30; }
+  nav.tabs button {
+    border:0; background:transparent; color:var(--ink2); font:inherit; font-weight:550;
+    padding:12px 18px; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1px;
+  }
+  nav.tabs button[aria-selected="true"] { color:var(--brand2); border-bottom-color:var(--brand2); }
+  :root[data-theme="light"] nav.tabs button[aria-selected="true"] { color:var(--brand); border-bottom-color:var(--brand); }
+  /* ---------- Layout ---------- */
+  main { padding:14px; flex:1; }
+  .panel-row { display:grid; gap:14px; }
+  @media (min-width:1000px){ .cols-5-4 { grid-template-columns:1.25fr 1fr; } }
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    box-shadow:var(--shadow); padding:14px 16px; min-width:0;
+  }
+  .card h2 { font-size:13px; margin:0 0 2px; font-weight:650; letter-spacing:.2px; }
+  .card .sub { color:var(--muted); font-size:11.5px; margin:0 0 12px; }
+  .stack { display:flex; flex-direction:column; gap:14px; }
+  /* ---------- Stat tiles ---------- */
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .tile { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:11px 12px; }
+  .tile .k { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  .tile .v { font-size:24px; font-weight:680; margin-top:3px; line-height:1.1; }
+  .tile .v small { font-size:12px; font-weight:500; color:var(--ink2); }
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:650; margin-top:6px; }
+  /* ---------- Tile map ---------- */
+  .tilemap { display:flex; flex-wrap:wrap; gap:3px; align-content:flex-start; }
+  .tmap-cell { width:17px; height:17px; border-radius:3px; cursor:pointer; outline:1px solid rgba(0,0,0,.04); transition:transform .06s; }
+  .tmap-cell:hover, .tmap-cell.sel { transform:scale(1.35); outline:2px solid var(--ink); z-index:2; position:relative; }
+  .legend { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:12px; font-size:11.5px; color:var(--ink2); }
+  .legend .item { display:flex; align-items:center; gap:6px; }
+  .legend .sw { width:14px; height:14px; border-radius:3px; border:1px solid var(--border); }
+  /* ---------- Bars ---------- */
+  .bars { display:flex; flex-direction:column; gap:5px; }
+  .bar-row { display:grid; grid-template-columns:150px 1fr 52px; align-items:center; gap:9px; font-size:12px; }
+  .bar-row .lab { color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track { position:relative; height:16px; background:var(--grid); border-radius:4px; overflow:hidden; }
+  .bar-fill { position:absolute; top:0; bottom:0; border-radius:4px; }
+  .bar-row .val { text-align:right; font-variant-numeric:tabular-nums; color:var(--ink); }
+  .divg-axis { position:absolute; top:-2px; bottom:-2px; width:1px; background:var(--axis); left:50%; }
+  .note { font-size:11.5px; color:var(--muted); margin-top:10px; padding:8px 10px; background:var(--surface2); border-radius:8px; border:1px dashed var(--border); }
+  .maphint { font-size:11px; color:var(--muted); margin:2px 0 10px; }
+  /* tooltip */
+  #tip {
+    position:fixed; pointer-events:none; z-index:100; background:var(--ink); color:var(--page);
+    padding:6px 9px; border-radius:7px; font-size:11.5px; opacity:0; transition:opacity .08s; max-width:230px; box-shadow:var(--shadow);
+  }
+  #tip b { color:var(--surface); }
+  .hidden { display:none !important; }
+  footer { padding:10px 18px; font-size:11px; color:var(--muted); border-top:1px solid var(--border); }
+  .ind-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .ind-list button {
+    border:1px solid var(--border); background:var(--surface2); color:var(--ink2);
+    border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; cursor:pointer;
+  }
+  .ind-list button[aria-pressed="true"] { background:var(--brand); color:#fff; border-color:var(--brand); font-weight:600; }
+  :root[data-theme="dark"] .ind-list button[aria-pressed="true"] { background:var(--brand2); border-color:var(--brand2); color:#06281a; }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="brandblock">
+    <div class="brandmark">VT</div>
+    <div>
+      <h1>Vermont Community Resilience Index</h1>
+      <p>Mock dashboard &middot; municipality data &middot; use the menus to update every element &rarr;</p>
+    </div>
+  </div>
+  <div class="selectors">
+    <div class="sel">
+      <label>Area Frame</label>
+      <div class="segmented" id="frameSeg" role="group" aria-label="Area frame">
+        <button data-frame="statewide" aria-pressed="true">Statewide</button>
+        <button data-frame="district" aria-pressed="false">VDH District</button>
+        <button data-frame="county" aria-pressed="false">County</button>
+      </div>
+    </div>
+    <div class="sel" id="unitWrap">
+      <label id="unitLabel">Area Unit</label>
+      <select id="unitSel"><option>Vermont (Statewide)</option></select>
+    </div>
+    <div class="sel">
+      <label>Municipality</label>
+      <select id="townSel"></select>
+    </div>
+    <div class="sel">
+      <label>Period</label>
+      <select id="periodSel"><option>2019–2023</option></select>
+    </div>
+    <button class="themebtn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="index" aria-selected="true">Composite Index</button>
+  <button role="tab" data-tab="indicators" aria-selected="false">Indicators &amp; SMD</button>
+  <button role="tab" data-tab="disagg" aria-selected="false">Disaggregations</button>
+</nav>
+
+<main>
+  <!-- ============ TAB: COMPOSITE INDEX ============ -->
+  <section id="tab-index" class="panel-row cols-5-4">
+    <div class="stack">
+      <div class="card">
+        <h2 id="idxMapTitle">Composite Resilience Index</h2>
+        <p class="sub" id="idxMapSub"></p>
+        <p class="maphint">Each tile is a municipality, colored by resilience class within the selected frame. Click a tile to inspect it. (Map tiles stand in for the ArcGIS choropleth in this mock.)</p>
+        <div class="tilemap" id="idxMap"></div>
+        <div class="legend" id="idxLegend"></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h2>Index Details</h2>
+        <p class="sub" id="idxDetSub">Selected municipality</p>
+        <div class="tiles" id="idxTiles"></div>
+      </div>
+      <div class="card">
+        <h2>This municipality&rsquo;s indicator percentiles</h2>
+        <p class="sub">Percentile rank (0–100) within the selected frame — higher is more resilient</p>
+        <div class="bars" id="idxPctlBars"></div>
+      </div>
+      <div class="card">
+        <h2>Index score ranking</h2>
+        <p class="sub" id="idxRankSub">Municipalities in frame, by composite index score</p>
+        <div class="bars" id="idxRankBars"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB: INDICATORS & SMD ============ -->
+  <section id="tab-indicators" class="hidden">
+    <div class="ind-list" id="indPicker" role="group" aria-label="Indicator"></div>
+    <div class="panel-row cols-5-4">
+      <div class="stack">
+        <div class="card">
+          <h2 id="smdMapTitle">Standard Mean Difference</h2>
+          <p class="sub" id="smdMapSub"></p>
+          <p class="maphint">Diverging scale: blue = above the frame mean (more resilient), red = below. Click a tile to inspect.</p>
+          <div class="tilemap" id="smdMap"></div>
+          <div class="legend" id="smdLegend"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h2>Indicator Details</h2>
+          <p class="sub" id="smdDetSub">Selected municipality</p>
+          <div class="tiles" id="smdTiles"></div>
+        </div>
+        <div class="card">
+          <h2>SMD across the frame</h2>
+          <p class="sub" id="smdRankSub">Standard mean difference by municipality (sorted)</p>
+          <div class="bars" id="smdBars"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB: DISAGGREGATIONS ============ -->
+  <section id="tab-disagg" class="hidden">
+    <div class="ind-list" id="disaggPicker" role="group" aria-label="Indicator"></div>
+    <div class="panel-row cols-5-4">
+      <div class="stack">
+        <div class="card">
+          <h2 id="disTitle">Race &amp; ethnicity disaggregation</h2>
+          <p class="sub" id="disSub"></p>
+          <div class="bars" id="disBars"></div>
+          <div class="legend" id="disLegend"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h2>Frame summary</h2>
+          <p class="sub" id="disSummarySub">Total-population reference for the selected frame</p>
+          <div class="tiles" id="disTiles"></div>
+        </div>
+        <div class="card">
+          <h2>Largest equity gaps</h2>
+          <p class="sub">Demographic groups furthest below the frame total mean</p>
+          <div class="bars" id="disGapBars"></div>
+          <div class="note">Disaggregated values use documented small-cell suppression (groups with a denominator below the threshold are withheld). District values are population-weighted aggregates of member municipalities.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Mock dashboard for layout/design review only — figures are synthetic, not ACS data. Scope per <code>dashboard/directions.md</code>: composite index, per-indicator SMD, and disaggregations across statewide, VDH district, and county frames. Population references, sub-themes, Census tracts, and hospital service areas are excluded.
+</footer>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ---------------- seeded PRNG (deterministic mock data) ---------------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+
+/* ---------------- domain ---------------- */
+const INDICATORS = [
+  {key:'supportiveIncome', name:'Supportive Income', kind:'rate'},
+  {key:'employment', name:'Employment', kind:'rate'},
+  {key:'noPublicAssistance', name:'No Public Assistance', kind:'rate'},
+  {key:'medianIncome', name:'Median Household Income', kind:'median'},
+  {key:'highSchool', name:'High School Education', kind:'rate'},
+  {key:'healthInsurance', name:'Health Insurance', kind:'rate'},
+  {key:'manageableHousing', name:'Manageable Housing Costs', kind:'rate'},
+  {key:'broadband', name:'Broadband Internet', kind:'rate'},
+  {key:'ownerOccupied', name:'Owner-Occupied Homes', kind:'rate'},
+  {key:'englishProf', name:'English Proficiency', kind:'rate'},
+  {key:'vehicleAccess', name:'Vehicle Access', kind:'rate'},
+];
+// 8 of 11 carry disaggregation (median income excluded here for brevity, matches "8 of 11")
+const DISAGG_INDICATORS = INDICATORS.filter(i=>!['medianIncome','manageableHousing','vehicleAccess'].includes(i.key));
+const DEMO_GROUPS = ['White','Black or African American','Asian','American Indian / Alaska Native',
+  'Native Hawaiian / Pacific Islander','Some Other Race','Two or More Races','Hispanic or Latino','BIPOC'];
+
+const COUNTY_DISTRICT = {
+  'Addison':'Middlebury','Bennington':'Bennington','Caledonia':'St. Johnsbury','Chittenden':'Burlington',
+  'Essex':'St. Johnsbury','Franklin':'St. Albans','Grand Isle':'St. Albans','Lamoille':'Morrisville',
+  'Orange':'White River Junction','Orleans':'Newport','Rutland':'Rutland','Washington':'Barre',
+  'Windham':'Brattleboro','Windsor':'Springfield'
+};
+// real-ish VT municipalities by county
+const TOWNS_BY_COUNTY = {
+  'Addison':['Middlebury','Bristol','Vergennes','Ferrisburgh','Addison','Cornwall','Salisbury','New Haven','Starksboro','Lincoln','Ripton','Weybridge','Shoreham','Orwell'],
+  'Bennington':['Bennington','Manchester','Arlington','Dorset','Pownal','Shaftsbury','Readsboro','Stamford','Winhall','Sunderland'],
+  'Caledonia':['St. Johnsbury','Lyndon','Danville','Hardwick','Barnet','Peacham','Cabot','Wheelock','Sheffield'],
+  'Chittenden':['Burlington','South Burlington','Essex','Colchester','Williston','Shelburne','Winooski','Milton','Hinesburg','Jericho','Richmond','Charlotte','Underhill','Westford'],
+  'Essex':['Guildhall','Canaan','Lunenburg','Concord','Brighton','Granby','Maidstone'],
+  'Franklin':['St. Albans','Swanton','Richford','Enosburg','Fairfax','Georgia','Sheldon','Highgate','Fairfield','Montgomery'],
+  'Grand Isle':['South Hero','Grand Isle','North Hero','Isle La Motte','Alburgh'],
+  'Lamoille':['Morristown','Stowe','Johnson','Hyde Park','Cambridge','Wolcott','Elmore','Belvidere'],
+  'Orange':['Randolph','Chelsea','Bradford','Thetford','Williamstown','Tunbridge','Strafford','Newbury','Corinth'],
+  'Orleans':['Newport','Derby','Barton','Troy','Craftsbury','Glover','Albany','Irasburg','Westfield'],
+  'Rutland':['Rutland','Brandon','Fair Haven','Castleton','Pittsford','Poultney','West Rutland','Killington','Mendon','Proctor','Wallingford'],
+  'Washington':['Montpelier','Barre','Waterbury','Northfield','Berlin','Middlesex','Moretown','Waitsfield','Worcester','Calais','Cabot'],
+  'Windham':['Brattleboro','Wilmington','Dover','Putney','Westminster','Townshend','Newfane','Guilford','Vernon','Rockingham','Grafton'],
+  'Windsor':['Springfield','Windsor','Hartford','Woodstock','Ludlow','Chester','Weathersfield','Hartland','Norwich','Royalton','Bethel']
+};
+const WRJ_OVERRIDE = new Set(['Hartford','Norwich','Royalton','Thetford','Strafford','Bethel']);
+
+/* ---------------- build town records + mock measures ---------------- */
+const TOWNS = [];
+Object.entries(TOWNS_BY_COUNTY).forEach(([county,list])=>{
+  list.forEach((name,i)=>{
+    let district = COUNTY_DISTRICT[county];
+    if (WRJ_OVERRIDE.has(name)) district='White River Junction';
+    const id = county+'|'+name;
+    const r = mulberry32(hash(id));
+    // base "resilience propensity" per town (0..1), plus per-indicator noise
+    const base = r();
+    const rec = {id,name,county,district,base, ind:{}};
+    INDICATORS.forEach(ind=>{
+      const rr = mulberry32(hash(id+ind.key));
+      if (ind.kind==='median'){
+        // median household income ~ $45k..$95k, correlated with base
+        rec.ind[ind.key] = Math.round((48000 + base*42000 + (rr()-0.5)*14000)/100)*100;
+      } else {
+        // rate 0..100, correlated with base
+        let v = 100*(0.42 + base*0.5 + (rr()-0.5)*0.22);
+        rec.ind[ind.key] = Math.max(8, Math.min(99.5, v));
+      }
+    });
+    TOWNS.push(rec);
+  });
+});
+const COUNTIES = [...new Set(TOWNS.map(t=>t.county))].sort();
+const DISTRICTS = [...new Set(TOWNS.map(t=>t.district))].sort();
+
+/* ---------------- frame computation ---------------- */
+function townsInFrame(state){
+  if (state.frame==='statewide') return TOWNS.slice();
+  if (state.frame==='county') return TOWNS.filter(t=>t.county===state.unit);
+  return TOWNS.filter(t=>t.district===state.unit);
+}
+function pctRank(arr, v){ // percentile rank of v within arr (0..100)
+  let c=0; for(const x of arr){ if(x<=v) c++; } return 100*c/arr.length;
+}
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function std(a){const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)*(x-m),0)/Math.max(1,a.length));}
+function gmean(a){const f=a.filter(x=>x>0); if(!f.length) return NaN; return Math.exp(mean(f.map(Math.log)));}
+
+// compute per-frame derived stats; cache keyed by frame+unit
+let FRAME=null;
+function computeFrame(state){
+  const list = townsInFrame(state);
+  const frame = {list, byInd:{}, index:{}};
+  // per-indicator: percentile ranks + mean/std + SMD
+  INDICATORS.forEach(ind=>{
+    const vals = list.map(t=>t.ind[ind.key]);
+    const m = mean(vals), s = std(vals);
+    frame.byInd[ind.key] = {mean:m, std:s, pr:{}, smd:{}};
+    list.forEach(t=>{
+      const v=t.ind[ind.key];
+      const pr = pctRank(vals, v);
+      frame.byInd[ind.key].pr[t.id]=pr;
+      // SMD = (value - frame mean)/std  (positive => above frame mean)
+      frame.byInd[ind.key].smd[t.id]= s>0 ? (v-m)/s : 0;
+    });
+  });
+  // composite index = geometric mean of the 11 percentile ranks, then re-rank 0..100
+  const raw = list.map(t=>{
+    const prs = INDICATORS.map(ind=>frame.byInd[ind.key].pr[t.id]);
+    return {id:t.id, g:gmean(prs)};
+  });
+  const gs = raw.map(r=>r.g);
+  raw.forEach(r=>{ frame.index[r.id]={score: pctRank(gs, r.g)}; });
+  // quantile class 1..4
+  const sorted=[...raw].sort((a,b)=>frame.index[a.id].score-frame.index[b.id].score);
+  sorted.forEach((r,i)=>{ frame.index[r.id].cls = Math.min(4, Math.floor(4*i/sorted.length)+1); });
+  return frame;
+}
+
+/* ---------------- disaggregation mock ---------------- */
+function disaggData(state, indKey){
+  const list = townsInFrame(state);
+  const vals = list.map(t=>t.ind[indKey]);
+  const total = mean(vals);
+  const seed = hash(state.frame+'|'+state.unit+'|'+indKey);
+  const r = mulberry32(seed);
+  // each demographic group: offset from total mean (White ~ at/above, others vary), with suppression
+  const rows = DEMO_GROUPS.map((g,i)=>{
+    const gr = mulberry32(seed+ i*7919);
+    let offset;
+    if (g==='White') offset = 1 + gr()*3;
+    else if (g==='BIPOC') offset = -(4 + gr()*8);
+    else offset = -(2 + gr()*16) * (0.5+gr());
+    let v = Math.max(5, Math.min(99, total + offset));
+    // suppression for the smallest groups in small frames
+    const suppressed = (state.frame!=='statewide') && (i>=3 && i<=5) && (gr()<0.55);
+    return {group:g, value: suppressed?null:v, suppressed};
+  });
+  return {total, rows};
+}
+
+/* ---------------- rendering helpers ---------------- */
+const tip = document.getElementById('tip');
+function showTip(html, ev){ tip.innerHTML=html; tip.style.opacity=1; moveTip(ev); }
+function moveTip(ev){ const pad=14; let x=ev.clientX+pad, y=ev.clientY+pad;
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  if(x+w>innerWidth) x=ev.clientX-w-pad; if(y+h>innerHeight) y=ev.clientY-h-pad;
+  tip.style.left=x+'px'; tip.style.top=y+'px'; }
+function hideTip(){ tip.style.opacity=0; }
+function clsColor(c){ return getComputedStyle(document.documentElement).getPropertyValue('--c'+c).trim(); }
+const CLASS_LABEL={1:'Low',2:'Medium-Low',3:'Medium-High',4:'High'};
+function fmt(v,d=1){ return v==null||isNaN(v)?'—':Number(v).toFixed(d); }
+function money(v){ return v==null?'—':'$'+Math.round(v).toLocaleString(); }
+function indName(k){ return INDICATORS.find(i=>i.key===k).name; }
+
+/* ---------- state ---------- */
+const state = { frame:'statewide', unit:'Vermont (Statewide)', town:null, tab:'index',
+                indKey:'employment', disKey:'employment' };
+
+/* ---------- selectors wiring ---------- */
+const unitSel=document.getElementById('unitSel'), townSel=document.getElementById('townSel'),
+      unitWrap=document.getElementById('unitWrap'), unitLabel=document.getElementById('unitLabel');
+
+function refreshUnitOptions(){
+  if(state.frame==='statewide'){ unitWrap.classList.add('hidden'); state.unit='Vermont (Statewide)'; }
+  else {
+    unitWrap.classList.remove('hidden');
+    const opts = state.frame==='county'?COUNTIES:DISTRICTS;
+    unitLabel.textContent = state.frame==='county'?'County':'VDH District';
+    unitSel.innerHTML = opts.map(o=>`<option>${o}</option>`).join('');
+    if(!opts.includes(state.unit)) state.unit=opts[0];
+    unitSel.value=state.unit;
+  }
+}
+function refreshTownOptions(){
+  const list = townsInFrame(state).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  townSel.innerHTML = list.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  if(!list.find(t=>t.id===state.town)) state.town = list[0]?.id;
+  townSel.value=state.town;
+}
+
+document.getElementById('frameSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed', x===b));
+  state.frame=b.dataset.frame; refreshUnitOptions(); refreshTownOptions(); renderAll();
+});
+unitSel.addEventListener('change',()=>{ state.unit=unitSel.value; refreshTownOptions(); renderAll(); });
+townSel.addEventListener('change',()=>{ state.town=townSel.value; renderAll(); });
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
+    state.tab=b.dataset.tab;
+    document.getElementById('tab-index').classList.toggle('hidden', state.tab!=='index');
+    document.getElementById('tab-indicators').classList.toggle('hidden', state.tab!=='indicators');
+    document.getElementById('tab-disagg').classList.toggle('hidden', state.tab!=='disagg');
+    renderAll();
+  });
+});
+
+/* ---------- theme ---------- */
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const root=document.documentElement;
+  root.setAttribute('data-theme', root.getAttribute('data-theme')==='dark'?'light':'dark');
+  renderAll();
+});
+
+/* ---------- indicator pickers ---------- */
+function buildPicker(el, items, selKey, onPick){
+  el.innerHTML = items.map(i=>`<button data-k="${i.key}" aria-pressed="${state[selKey]===i.key}">${i.name}</button>`).join('');
+  el.onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+    state[selKey]=b.dataset.k; [...el.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); onPick(); };
+}
+
+/* ================= RENDERERS ================= */
+function frameTitle(){ return state.frame==='statewide'?'Vermont (Statewide frame)':`${state.unit} ${state.frame==='county'?'County':'District'} frame`; }
+
+function renderIndexTab(){
+  const f=FRAME; const sel=TOWNS.find(t=>t.id===state.town);
+  document.getElementById('idxMapSub').textContent = `${frameTitle()} · ${f.list.length} municipalities`;
+  document.getElementById('idxRankSub').textContent = `${f.list.length} municipalities in frame, by composite index score`;
+  // tile map
+  const map=document.getElementById('idxMap'); map.innerHTML='';
+  f.list.slice().sort((a,b)=>f.index[b.id].score-f.index[a.id].score).forEach(t=>{
+    const c=f.index[t.id].cls; const d=document.createElement('div');
+    d.className='tmap-cell'+(t.id===state.town?' sel':''); d.style.background=clsColor(c);
+    d.onmousemove=e=>showTip(`<b>${t.name}</b> (${t.county})<br>Index ${fmt(f.index[t.id].score,0)} · ${CLASS_LABEL[c]}`,e);
+    d.onmouseleave=hideTip;
+    d.onclick=()=>{ state.town=t.id; townSel.value=t.id; renderAll(); };
+    map.appendChild(d);
+  });
+  // legend
+  document.getElementById('idxLegend').innerHTML = [4,3,2,1].map(c=>
+    `<span class="item"><span class="sw" style="background:${clsColor(c)}"></span>${CLASS_LABEL[c]} resilience</span>`).join('')
+    + `<span class="item" style="margin-left:auto">■ outlined = selected</span>`;
+  // detail tiles
+  const idx=f.index[state.town]; const c=idx.cls;
+  document.getElementById('idxDetSub').textContent = `${sel.name} · ${sel.county} County · ${sel.district} District`;
+  document.getElementById('idxTiles').innerHTML = `
+    <div class="tile"><div class="k">Index Score</div><div class="v">${fmt(idx.score,0)}<small> /100</small></div>
+      <span class="pill" style="background:${clsColor(c)};color:var(--c${c}-ink)">${CLASS_LABEL[c]} Resilience</span></div>
+    <div class="tile"><div class="k">Rank in frame</div><div class="v">${rankInFrame(f,state.town)}<small> of ${f.list.length}</small></div></div>
+    <div class="tile"><div class="k">Frame</div><div class="v" style="font-size:16px">${state.frame==='statewide'?'Statewide':state.unit}</div></div>`;
+  // this town's indicator percentiles (single series, green)
+  const brand=getComputedStyle(document.documentElement).getPropertyValue('--brand2').trim();
+  const prRows = INDICATORS.map(ind=>({label:ind.name, value:f.byInd[ind.key].pr[state.town]}))
+    .sort((a,b)=>b.value-a.value);
+  renderBars('idxPctlBars', prRows, {max:100, color:brand, suffix:'', fmtv:v=>fmt(v,0)});
+  // ranking bars (top + selected context): show top 12 and ensure selected present
+  const ranked=f.list.slice().sort((a,b)=>f.index[b.id].score-f.index[a.id].score);
+  let top=ranked.slice(0,12);
+  if(!top.find(t=>t.id===state.town)){ const s=ranked.find(t=>t.id===state.town); if(s) top=top.slice(0,11).concat(s); }
+  renderBars('idxRankBars', top.map(t=>({label:t.name, value:f.index[t.id].score,
+      color:clsColor(f.index[t.id].cls), hi:t.id===state.town})), {max:100, fmtv:v=>fmt(v,0)});
+}
+function rankInFrame(f,id){ const r=f.list.slice().sort((a,b)=>f.index[b.id].score-f.index[a.id].score); return r.findIndex(t=>t.id===id)+1; }
+
+function renderIndicatorsTab(){
+  const f=FRAME, k=state.indKey, info=f.byInd[k], sel=TOWNS.find(t=>t.id===state.town);
+  document.getElementById('smdMapSub').textContent = `${indName(k)} · ${frameTitle()}`;
+  document.getElementById('smdRankSub').textContent = `${indName(k)} — standard mean difference by municipality`;
+  const pos=getComputedStyle(document.documentElement).getPropertyValue('--pos').trim();
+  const neg=getComputedStyle(document.documentElement).getPropertyValue('--neg').trim();
+  const smdColor=v=> v>=0?pos:neg;
+  // map by SMD
+  const map=document.getElementById('smdMap'); map.innerHTML='';
+  f.list.slice().sort((a,b)=>info.smd[b.id]-info.smd[a.id]).forEach(t=>{
+    const v=info.smd[t.id]; const d=document.createElement('div');
+    const alpha=Math.min(1,0.35+Math.abs(v)/2.2);
+    d.className='tmap-cell'+(t.id===state.town?' sel':''); d.style.background=smdColor(v); d.style.opacity=alpha;
+    d.onmousemove=e=>showTip(`<b>${t.name}</b><br>${indName(k)}: ${t.ind[k]>1000?money(t.ind[k]):fmt(t.ind[k])}${t.ind[k]>1000?'':'%'}<br>SMD ${v>=0?'+':''}${fmt(v,2)}`,e);
+    d.onmouseleave=hideTip; d.onclick=()=>{ state.town=t.id; townSel.value=t.id; renderAll(); };
+    map.appendChild(d);
+  });
+  document.getElementById('smdLegend').innerHTML =
+    `<span class="item"><span class="sw" style="background:${neg}"></span>Below frame mean</span>`+
+    `<span class="item"><span class="sw" style="background:${pos}"></span>Above frame mean</span>`+
+    `<span class="item" style="margin-left:auto">opacity ∝ |SMD|</span>`;
+  // detail
+  const v=sel.ind[k], smd=info.smd[state.town];
+  document.getElementById('smdDetSub').textContent = `${sel.name} · ${indName(k)}`;
+  const isMoney = INDICATORS.find(i=>i.key===k).kind==='median';
+  document.getElementById('smdTiles').innerHTML = `
+    <div class="tile"><div class="k">${isMoney?'Median income':'Indicator value'}</div><div class="v">${isMoney?money(v):fmt(v)+'%'}</div></div>
+    <div class="tile"><div class="k">Frame mean</div><div class="v">${isMoney?money(info.mean):fmt(info.mean)+'%'}</div></div>
+    <div class="tile"><div class="k">Std. Mean Diff.</div><div class="v" style="color:${smd>=0?pos:neg}">${smd>=0?'+':''}${fmt(smd,2)}</div>
+      <span class="pill" style="background:${smd>=0?pos:neg};color:#fff">${smd>=0?'Above':'Below'} local mean</span></div>
+    <div class="tile"><div class="k">Percentile</div><div class="v">${fmt(info.pr[state.town],0)}<small>/100</small></div></div>`;
+  // diverging SMD bars (sorted), limited to ~14 around range
+  const ranked=f.list.slice().sort((a,b)=>info.smd[b.id]-info.smd[a.id]);
+  let show=ranked.slice(0,7).concat(ranked.slice(-7));
+  if(!show.find(t=>t.id===state.town)){ const s=ranked.find(t=>t.id===state.town); if(s){show.pop();show.push(s);} }
+  show=[...new Map(show.map(t=>[t.id,t])).values()].sort((a,b)=>info.smd[b.id]-info.smd[a.id]);
+  renderDivergingBars('smdBars', show.map(t=>({label:t.name, value:info.smd[t.id],
+      color:smdColor(info.smd[t.id]), hi:t.id===state.town})), {range:2.2});
+}
+
+function renderDisaggTab(){
+  const k=state.disKey; const d=disaggData(state,k);
+  document.getElementById('disSub').textContent = `${indName(k)} · ${frameTitle()} · reference total = ${fmt(d.total)}%`;
+  // bars vs reference line (total mean)
+  const cats=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8','--s3'];
+  const cs=getComputedStyle(document.documentElement);
+  const rows=d.rows.map((r,i)=>({label:r.group, value:r.value, suppressed:r.suppressed,
+      color: r.group==='BIPOC'? cs.getPropertyValue('--brand').trim() : cs.getPropertyValue(cats[i]).trim()}));
+  renderBars('disBars', rows, {max:100, ref:d.total, refLabel:'Total mean', fmtv:v=>v==null?'supp.':fmt(v,0)});
+  document.getElementById('disLegend').innerHTML =
+    `<span class="item"><span class="sw" style="border-style:dashed;background:transparent"></span>dashed line = frame total mean (${fmt(d.total)}%)</span>`+
+    `<span class="item">“supp.” = suppressed (small cell)</span>`;
+  // summary tiles
+  const valid=d.rows.filter(r=>r.value!=null);
+  const gaps=valid.map(r=>({group:r.group, gap:r.value-d.total})).sort((a,b)=>a.gap-b.gap);
+  document.getElementById('disSummarySub').textContent = `${indName(k)} · ${frameTitle()}`;
+  document.getElementById('disTiles').innerHTML = `
+    <div class="tile"><div class="k">Total mean</div><div class="v">${fmt(d.total,0)}<small>%</small></div></div>
+    <div class="tile"><div class="k">Groups reported</div><div class="v">${valid.length}<small>/${d.rows.length}</small></div></div>
+    <div class="tile"><div class="k">Widest gap</div><div class="v" style="font-size:18px">${gaps[0]?fmt(gaps[0].gap,0):'—'}<small> pts</small></div>
+      <span class="pill" style="background:var(--neg);color:#fff">${gaps[0]?gaps[0].group:''}</span></div>`;
+  // gap bars (below-mean only), diverging-ish single sided
+  const neg=cs.getPropertyValue('--neg').trim(), pos=cs.getPropertyValue('--pos').trim();
+  renderDivergingBars('disGapBars', gaps.slice(0,7).map(g=>({label:g.group, value:g.gap,
+      color:g.gap>=0?pos:neg})), {range:Math.max(12, Math.abs(gaps[0]?.gap||10)+4), fmtv:v=>(v>=0?'+':'')+fmt(v,0)});
+}
+
+/* ---------- bar primitives ---------- */
+function renderBars(id, rows, opts){
+  const el=document.getElementById(id); const max=opts.max|| Math.max(...rows.map(r=>r.value||0));
+  const fmtv=opts.fmtv||(v=>fmt(v));
+  el.innerHTML='';
+  rows.forEach(r=>{
+    const row=document.createElement('div'); row.className='bar-row';
+    const pct = r.value==null?0:Math.max(0,Math.min(100,100*r.value/max));
+    const refPct = opts.ref!=null?Math.max(0,Math.min(100,100*opts.ref/max)):null;
+    row.innerHTML=`<div class="lab" title="${r.label}" style="${r.hi?'font-weight:700;color:var(--ink)':''}">${r.label}${r.suppressed?' *':''}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="left:0;width:${pct}%;background:${r.color||'var(--brand2)'}; ${r.hi?'outline:2px solid var(--ink);':''}"></div>
+        ${refPct!=null?`<div style="position:absolute;top:-2px;bottom:-2px;left:${refPct}%;width:0;border-left:2px dashed var(--ink2)"></div>`:''}
+      </div>
+      <div class="val">${fmtv(r.value)}</div>`;
+    const track=row.querySelector('.bar-track');
+    track.onmousemove=e=>showTip(`<b>${r.label}</b><br>${fmtv(r.value)}${r.suppressed?' (suppressed)':''}`,e);
+    track.onmouseleave=hideTip;
+    el.appendChild(row);
+  });
+}
+function renderDivergingBars(id, rows, opts){
+  const el=document.getElementById(id); const range=opts.range||Math.max(...rows.map(r=>Math.abs(r.value)))||1;
+  const fmtv=opts.fmtv||(v=>(v>=0?'+':'')+fmt(v,2));
+  el.innerHTML='';
+  rows.forEach(r=>{
+    const row=document.createElement('div'); row.className='bar-row';
+    const half=50; const w=Math.min(50,Math.abs(r.value)/range*50);
+    const left = r.value>=0? half : half-w;
+    row.innerHTML=`<div class="lab" title="${r.label}" style="${r.hi?'font-weight:700;color:var(--ink)':''}">${r.label}</div>
+      <div class="bar-track">
+        <div class="divg-axis"></div>
+        <div class="bar-fill" style="left:${left}%;width:${w}%;background:${r.color}; ${r.hi?'outline:2px solid var(--ink);':''}"></div>
+      </div>
+      <div class="val">${fmtv(r.value)}</div>`;
+    const track=row.querySelector('.bar-track');
+    track.onmousemove=e=>showTip(`<b>${r.label}</b><br>${fmtv(r.value)}`,e);
+    track.onmouseleave=hideTip;
+    el.appendChild(row);
+  });
+}
+
+/* ---------- master render ---------- */
+function renderAll(){
+  FRAME=computeFrame(state);
+  if(state.tab==='index') renderIndexTab();
+  else if(state.tab==='indicators') renderIndicatorsTab();
+  else renderDisaggTab();
+}
+
+/* ---------- init ---------- */
+buildPicker(document.getElementById('indPicker'), INDICATORS, 'indKey', renderAll);
+buildPicker(document.getElementById('disaggPicker'), DISAGG_INDICATORS, 'disKey', renderAll);
+refreshUnitOptions(); refreshTownOptions();
+state.indKey='employment'; state.disKey='employment';
+renderAll();
+</script>
+</body>
+</html>
