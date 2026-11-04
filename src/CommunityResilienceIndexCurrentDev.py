@@ -21,6 +21,51 @@ def scipygmean(values):
     return _scipy_gmean(arr)
 
 
+def _frame_weighted_rate(df, group_col, num_col='Numerator', den_col='Denominator'):
+    """Population-weighted area-frame rate for a RATE indicator, broadcast to every
+    member row: sum(numerator) / sum(denominator) * 100 within each group.
+
+    This is the "Standard Mean Difference > Step 1" reference for the District and HSA
+    area frames (which have no ACS geography of their own). It replaces an unweighted
+    mean of town rates, so a 200-person town no longer counts the same as Burlington;
+    the result equals the rate ACS would report if it tabulated the frame directly.
+    Rows carrying an ACS sentinel / invalid numerator (<0) or a non-positive
+    denominator are excluded from both sums. A group with no valid member (or whose
+    denominators sum to 0) returns NaN."""
+    num = pd.to_numeric(df[num_col], errors='coerce')
+    den = pd.to_numeric(df[den_col], errors='coerce')
+    valid = (num >= 0) & (den > 0)
+    num = num.where(valid)
+    den = den.where(valid)
+    g = df[group_col]
+    sum_num = num.groupby(g).transform('sum', min_count=1)
+    sum_den = den.groupby(g).transform('sum', min_count=1)
+    return (sum_num / sum_den.replace(0, np.nan)) * 100
+
+
+def _frame_weighted_value(df, group_col, value_col='Numerator', weight_col='Weight'):
+    """Count-weighted area-frame mean for a VALUE indicator (e.g. median household
+    income), broadcast to every member row: sum(value * weight) / sum(weight) within
+    each group, where `weight` is a per-town count (households for median income).
+
+    A plain mean of town medians lets tiny towns pull the frame value; weighting by
+    household count makes the District/HSA reference population-representative. Falls
+    back to an unweighted mean when no weight column is present. Rows with an invalid
+    value (<0 ACS sentinel) or a non-positive weight are excluded; an empty group
+    returns NaN."""
+    val = pd.to_numeric(df[value_col], errors='coerce')
+    g = df[group_col]
+    if weight_col not in df.columns:
+        return val.where(val >= 0).groupby(g).transform('mean')
+    w = pd.to_numeric(df[weight_col], errors='coerce')
+    valid = (val >= 0) & (w > 0)
+    val = val.where(valid)
+    w = w.where(valid)
+    sum_vw = (val * w).groupby(g).transform('sum', min_count=1)
+    sum_w = w.groupby(g).transform('sum', min_count=1)
+    return sum_vw / sum_w.replace(0, np.nan)
+
+
 # =============================================================================
 # RUN CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -188,7 +233,12 @@ indicators = {'SupportiveIncome':{'variables': {"numerators": ["C17002_008E"],
                                                'county': {73: 'County Key'},
                                                'statewide': {72: 'State Key'}}},
               'MedianHouseholdIncome': {'variables': {"numerators": ["B19013_001E"],
-                                                      "denominators": []},
+                                                      "denominators": [],
+                                                      # Total households (B19001_001E, the universe of
+                                                      # median household income). Not used to form a rate;
+                                                      # only to population-weight the District/HSA area-
+                                                      # frame means in _frame_weighted_value().
+                                                      "weights": ["B19001_001E"]},
                                         'columnsForStats':{
                                                            'tract': {0: 'Indicator Percentage', 3: 'Census Tract'},
                                                            'county subdivision': {0: 'Indicator Percentage', 3: 'townFIPS'},
@@ -263,9 +313,12 @@ for indicator in indicators:
 
     indicatorNumeratorVariables = indicators[indicator]['variables']['numerators']
     indicatorDenominatorVariables = indicators[indicator]['variables']['denominators']
+    # Optional per-unit weight (e.g. town household count for median household income).
+    indicatorWeightVariables = indicators[indicator]['variables'].get('weights', [])
 
     variablesStringNumerator = ','.join(indicatorNumeratorVariables)
     variablesStringDenominator = ','.join(indicatorDenominatorVariables)
+    variablesStringWeight = ','.join(indicatorWeightVariables)
 
     geographyDataframes[indicator] = dict()
 
@@ -279,12 +332,15 @@ for indicator in indicators:
             if geography == 'county':
                 urlNumerator = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringNumerator}&for={geography}:*&in=state:{state}&key={apiKey}'
                 urlDenominator = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringDenominator}&for={geography}:*&in=state:{state}&key={apiKey}'
+                urlWeight = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringWeight}&for={geography}:*&in=state:{state}&key={apiKey}'
             elif geography == 'statewide':
                 urlNumerator = f'https://api.census.gov/data/{year}/acs/acs5?for=state:{state}&get={variablesStringNumerator}&key={apiKey}'
                 urlDenominator = f'https://api.census.gov/data/{year}/acs/acs5?for=state:{state}&get={variablesStringDenominator}&key={apiKey}'
+                urlWeight = f'https://api.census.gov/data/{year}/acs/acs5?for=state:{state}&get={variablesStringWeight}&key={apiKey}'
             else:
                 urlNumerator = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringNumerator}&for={geography}:*&in=state:{state}+county:*&key={apiKey}'
                 urlDenominator = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringDenominator}&for={geography}:*&in=state:{state}+county:*&key={apiKey}'
+                urlWeight = f'https://api.census.gov/data/{year}/acs/acs5?get={variablesStringWeight}&for={geography}:*&in=state:{state}+county:*&key={apiKey}'
 
             indicatorResponseNumerator = requests.get(urlNumerator)
             indicatorResponseNumeratorJSON = indicatorResponseNumerator.json()
@@ -312,13 +368,26 @@ for indicator in indicators:
                 indicatorDataFrameDenominator.iloc[:, :-1] = indicatorDataFrameDenominator.iloc[:, :-1].apply(pd.to_numeric, errors='coerce')
                 indicatorDataFrameDenominator.loc[:, 'Denominator'] = indicatorDataFrameDenominator.iloc[:, :-1].sum(axis=1)
                 indicatorDataFrameDenominator.drop(indicatorDataFrameDenominator.columns[:-2], axis=1, inplace=True)
-                combinedIndicatorDataFrame = indicatorDataFrameNumerator.merge(indicatorDataFrameDenominator, on='JoinKey')
-                geographyDataframes[indicator][geography] = combinedIndicatorDataFrame
+                baseIndicatorDataFrame = indicatorDataFrameNumerator.merge(indicatorDataFrameDenominator, on='JoinKey')
+            else:
+                baseIndicatorDataFrame = indicatorDataFrameNumerator
 
-            #if len(geographyDataframes[indicator]) == 0:
-            #    geographyDataframes[indicator][geography] = indicatorDataFrameNumerator
-            if geography not in geographyDataframes[indicator]:
-                geographyDataframes[indicator][geography] = indicatorDataFrameNumerator
+            # Optional per-unit WEIGHT (e.g. town household count for median household
+            # income). Merged as a 'Weight' column and used ONLY to population-weight
+            # the District/HSA area-frame means (_frame_weighted_value); it never forms
+            # a rate, so median income stays on the count path.
+            if len(indicatorWeightVariables) != 0:
+                indicatorResponseWeightJSON = requests.get(urlWeight).json()
+                indicatorDataFrameWeight = pd.DataFrame.from_dict(indicatorResponseWeightJSON[1:])
+                columnsTojoin = indicatorDataFrameWeight.columns[-geographyFieldIndex:]
+                indicatorDataFrameWeight['JoinKey'] = indicatorDataFrameWeight[columnsTojoin].astype(str).apply(''.join, axis=1)
+                indicatorDataFrameWeight.drop(columnsTojoin, axis=1, inplace=True)
+                indicatorDataFrameWeight.iloc[:, :-1] = indicatorDataFrameWeight.iloc[:, :-1].apply(pd.to_numeric, errors='coerce')
+                indicatorDataFrameWeight.loc[:, 'Weight'] = indicatorDataFrameWeight.iloc[:, :-1].sum(axis=1)
+                indicatorDataFrameWeight = indicatorDataFrameWeight[['JoinKey', 'Weight']]
+                baseIndicatorDataFrame = baseIndicatorDataFrame.merge(indicatorDataFrameWeight, on='JoinKey', how='left')
+
+            geographyDataframes[indicator][geography] = baseIndicatorDataFrame
 
 # Loop through each geography for each indicator, calculate summary stats,
 # and produce indicies and metadata.
@@ -385,10 +454,12 @@ for indicator in geographyDataframes:
                 currentDataFrame['PercentPerCapitaCountyMean'] = currentDataFrame.groupby('CNTYNAME')['PercentPerCapita'].transform('mean')
                 currentDataFrame['PercentPerCapitaDistrictRank'] = currentDataFrame.groupby('VDHDSTRTNME')['PercentPerCapita'].rank(pct=True)*100
                 currentDataFrame['PercentPerCapitaDistrictSD'] = currentDataFrame.groupby('VDHDSTRTNME')['PercentPerCapita'].transform('std')
-                currentDataFrame['PercentPerCapitaDistrictMean'] = currentDataFrame.groupby('VDHDSTRTNME')['PercentPerCapita'].transform('mean')
+                # Area-frame mean = population-weighted sum(num)/sum(denom), NOT an
+                # unweighted mean of town rates (see _frame_weighted_rate).
+                currentDataFrame['PercentPerCapitaDistrictMean'] = _frame_weighted_rate(currentDataFrame, 'VDHDSTRTNME')
                 currentDataFrame['PercentPerCapitaHSARank'] = currentDataFrame.groupby('HLTHSANAME')['PercentPerCapita'].rank(pct=True)*100
                 currentDataFrame['PercentPerCapitaHSASD'] = currentDataFrame.groupby('HLTHSANAME')['PercentPerCapita'].transform('std')
-                currentDataFrame['PercentPerCapitaHSAMean'] = currentDataFrame.groupby('HLTHSANAME')['PercentPerCapita'].transform('mean')
+                currentDataFrame['PercentPerCapitaHSAMean'] = _frame_weighted_rate(currentDataFrame, 'HLTHSANAME')
             elif geography in ['tract']:
                 # Calculate grouby percent mean, percent rank, and percent stddev values for county
                 currentDataFrame['PercentPerCapitaCountyRank'] = currentDataFrame.groupby('CNTYCODE')['PercentPerCapita'].rank(pct=True)*100
@@ -412,10 +483,14 @@ for indicator in geographyDataframes:
                 currentDataFrame['IndicatorCountyMean'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('CNTYNAME')['Numerator'].transform('mean'))
                 currentDataFrame['IndicatorDistrictRank'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('VDHDSTRTNME')['Numerator'].rank(pct=True)*100)
                 currentDataFrame['IndicatorDistrictSD'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('VDHDSTRTNME')['Numerator'].transform('std'))
-                currentDataFrame['IndicatorDistrictMean'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('VDHDSTRTNME')['Numerator'].transform('mean'))
+                # Area-frame mean = household-count-weighted mean of town values (e.g.
+                # median income weighted by households), NOT a plain mean of town
+                # values (see _frame_weighted_value; falls back to a plain mean if no
+                # 'Weight' column was fetched for this indicator).
+                currentDataFrame['IndicatorDistrictMean'] = _frame_weighted_value(currentDataFrame, 'VDHDSTRTNME')
                 currentDataFrame['IndicatorHSARank'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('HLTHSANAME')['Numerator'].rank(pct=True)*100)
                 currentDataFrame['IndicatorHSASD'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('HLTHSANAME')['Numerator'].transform('std'))
-                currentDataFrame['IndicatorHSAMean'] = (currentDataFrame.loc[currentDataFrame['Numerator'] >= 0].groupby('HLTHSANAME')['Numerator'].transform('mean'))
+                currentDataFrame['IndicatorHSAMean'] = _frame_weighted_value(currentDataFrame, 'HLTHSANAME')
             else:
                 currentDataFrame['MeanIndicatorCount'] = currentDataFrame.loc[currentDataFrame['Numerator'] >= 0, 'Numerator'].mean()
                 currentDataFrame['IndicatorRank'] = currentDataFrame.loc[currentDataFrame['Numerator'] >= 0, 'Numerator'].rank(pct=True)*100
@@ -433,9 +508,12 @@ for indicator in geographyDataframes:
 #   * statewide & county frames -> the indicator AGGREGATED directly from ACS at
 #     that frame (the statewide / county API calls) -- a population-weighted value,
 #     NOT the unweighted mean of tract/municipality rates.
-#   * district & hospital frames -> the average of the municipalities in the frame
-#     (already computed above as PercentPerCapita{District,HSA}Mean / Indicator
-#     {District,HSA}Mean, since ACS has no district/HSA geography).
+#   * district & hospital frames -> a POPULATION-WEIGHTED aggregate of the member
+#     municipalities (already computed above as PercentPerCapita{District,HSA}Mean /
+#     Indicator{District,HSA}Mean), since ACS has no district/HSA geography. Rates use
+#     sum(numerator)/sum(denominator); median household income uses a household-count-
+#     weighted mean. This matches the statewide/county semantics -- a small town no
+#     longer counts the same as a large one (see _frame_weighted_rate/_value).
 # These area-frame means are the reference the Standard Mean Difference is measured
 # against, and are also the "Indicator Mean" columns in the indicator tables and the
 # "Total <frame> Mean" columns in the disaggregated-demographics tables.
@@ -1005,17 +1083,36 @@ def _total_means(model_key, kind):
         county = pd.to_numeric(co.set_index('CNTYCODE')[coCol], errors='coerce')
     else:
         county = pd.Series(dtype=float)
-    # district & HSA: municipality averages, from town-level total-population values
+    # district & HSA: POPULATION-WEIGHTED aggregates of the member municipalities
+    # (rate -> sum(num)/sum(denom); median -> household-count-weighted mean), matching
+    # the statewide/county semantics. Median falls back to an unweighted town mean when
+    # no household-count weight is available for the model.
     src = geographyDataframes[model_key]['county subdivision']
-    valcol = 'Numerator' if kind == 'median' else 'PercentPerCapita'
-    df = pd.DataFrame({'Town GEOID': src['JoinKey'].astype(str),
-                       'val': pd.to_numeric(src[valcol], errors='coerce')})
-    df = df.merge(townsDataFrame, on='Town GEOID', how='left')
+    tmp = pd.DataFrame({'Town GEOID': src['JoinKey'].astype(str)})
     if kind == 'median':
-        df = df[df['val'] > 0]
+        tmp['val'] = pd.to_numeric(src['Numerator'], errors='coerce')
+        tmp['w'] = pd.to_numeric(src['Weight'], errors='coerce') if 'Weight' in src.columns else 1.0
+    else:
+        tmp['num'] = pd.to_numeric(src['Numerator'], errors='coerce')
+        tmp['den'] = pd.to_numeric(src['Denominator'], errors='coerce')
+    tmp = tmp.merge(townsDataFrame, on='Town GEOID', how='left')
+
+    def _frame_mean(gcol):
+        if kind == 'median':
+            d = tmp[(tmp['val'] > 0) & (tmp['w'] > 0)]
+            if d.empty:
+                return pd.Series(dtype=float)
+            vw = (d['val'] * d['w']).groupby(d[gcol]).sum()
+            ww = d['w'].groupby(d[gcol]).sum()
+            return vw / ww.replace(0, np.nan)
+        d = tmp[(tmp['num'] >= 0) & (tmp['den'] > 0)]
+        n = d['num'].groupby(d[gcol]).sum()
+        de = d['den'].groupby(d[gcol]).sum()
+        return (n / de.replace(0, np.nan)) * 100
+
     return (statewide, county,
-            df.groupby('VDH District')['val'].mean(),
-            df.groupby('Hospital Service Area')['val'].mean())
+            _frame_mean('VDH District'),
+            _frame_mean('Hospital Service Area'))
 
 
 def _fetch(getvars, geo):
@@ -1032,9 +1129,16 @@ def _fetch(getvars, geo):
 
 def _process_group(group, kind, geo):
     """Fetch one demographic group at one geography; return a frame with a geo key
-    plus numeric 'pct' (and 'num'/'denom' for rate indicators)."""
+    plus numeric 'pct' (and 'num'/'denom' for rate indicators, 'weight' = household
+    count for median indicators)."""
     if kind == 'median':
-        getvars = group['variables']
+        median_vars = list(group['variables'])
+        # Household-count weight for each race-specific median: B19013X_001E ->
+        # B19001X_001E (same race-iteration letter; B19001_001E = total households for
+        # the overall median). Used to population-weight the district/HSA aggregates.
+        weight_vars = list(group.get('weights') or
+                           [v.replace('B19013', 'B19001') for v in median_vars])
+        getvars = median_vars + weight_vars
     else:
         getvars = group['denominators'] + group['numerators']
     n_head = len(getvars)
@@ -1043,7 +1147,9 @@ def _process_group(group, kind, geo):
     for c in range(n_head):
         df[c] = pd.to_numeric(df[c], errors='coerce')
     if kind == 'median':
-        df['pct'] = df[0]
+        nmed = len(median_vars)
+        df['pct'] = df.iloc[:, 0:nmed].sum(axis=1)
+        df['weight'] = df.iloc[:, nmed:nmed + len(weight_vars)].sum(axis=1)
         df['denom'] = np.nan
         df['num'] = np.nan
     else:
@@ -1051,6 +1157,7 @@ def _process_group(group, kind, geo):
         df['denom'] = df.iloc[:, 0:nd].sum(axis=1)
         df['num'] = df.iloc[:, nd:nd + nn].sum(axis=1)
         df['pct'] = np.where(df['denom'] > 0, df['num'] / df['denom'] * 100, np.nan)
+        df['weight'] = np.nan
     geocols = list(range(n_head, total_cols))  # [state] | [state,county] | [state,county,cousub]
     if geo == 'statewide':
         df['geo'] = 'statewide'
@@ -1103,16 +1210,25 @@ def run_demographics():
                                      'County': _county_with_suffix(countyCodeToName.get(ckey))})
 
             # ---- towns -> districts & hospitals ----
+            # District/HSA disaggregated values are POPULATION-WEIGHTED aggregates of
+            # the member towns (rate -> sum(num)/sum(denom); median -> household-count-
+            # weighted mean), consistent with the BIPOC aggregate below and the
+            # area-frame means, rather than an unweighted mean of town values.
             t = _process_group(group, kind, 'town')
-            tm = townsDataFrame.merge(t[['Town GEOID', 'pct', 'num', 'denom']], on='Town GEOID', how='left')
+            tm = townsDataFrame.merge(t[['Town GEOID', 'pct', 'num', 'denom', 'weight']], on='Town GEOID', how='left')
             if kind == 'median':
-                tm = tm[tm['pct'] > 0]
-                dist = tm.groupby('VDH District', as_index=False).agg(pct=('pct', 'mean'))
-                hosp = tm.groupby('Hospital Service Area', as_index=False).agg(pct=('pct', 'mean'))
+                tm = tm[(tm['pct'] > 0) & (tm['weight'] > 0)].copy()
+                tm['_vw'] = tm['pct'] * tm['weight']
+                dist = tm.groupby('VDH District', as_index=False).agg(_vw=('_vw', 'sum'), weight=('weight', 'sum'))
+                hosp = tm.groupby('Hospital Service Area', as_index=False).agg(_vw=('_vw', 'sum'), weight=('weight', 'sum'))
+                dist['pct'] = np.where(dist['weight'] > 0, dist['_vw'] / dist['weight'], np.nan)
+                hosp['pct'] = np.where(hosp['weight'] > 0, hosp['_vw'] / hosp['weight'], np.nan)
                 dist['denom'] = np.nan; hosp['denom'] = np.nan
             else:
-                dist = tm.groupby('VDH District', as_index=False).agg(pct=('pct', 'mean'), denom=('denom', 'sum'))
-                hosp = tm.groupby('Hospital Service Area', as_index=False).agg(pct=('pct', 'mean'), denom=('denom', 'sum'))
+                dist = tm.groupby('VDH District', as_index=False).agg(num=('num', 'sum'), denom=('denom', 'sum'))
+                hosp = tm.groupby('Hospital Service Area', as_index=False).agg(num=('num', 'sum'), denom=('denom', 'sum'))
+                dist['pct'] = np.where(dist['denom'] > 0, dist['num'] / dist['denom'] * 100, np.nan)
+                hosp['pct'] = np.where(hosp['denom'] > 0, hosp['num'] / hosp['denom'] * 100, np.nan)
             for _, r in dist.iterrows():
                 if kind != 'median' and not _keep_rate(r['denom']):
                     continue
