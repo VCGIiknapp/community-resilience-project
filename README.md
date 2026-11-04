@@ -16,7 +16,8 @@ The application has **two components**:
 
 | Component | What it shows | Statistic |
 |-----------|---------------|-----------|
-| **1. Composite Index** | A single 0–100 resilience score per geography | **2. Indicator Displays** | Spatial distribution of each individual indicator, plus race/ethnicity disaggregation | Standard mean difference (−1 to 1) |
+| **1. Composite Index** | A single 0–100 resilience score per municipality | Geometric mean of the 11 indicator percentile ranks, re-ranked 0–100 |
+| **2. Indicator Displays** | Spatial distribution of each individual indicator, plus race/ethnicity disaggregation | Standard mean difference (−1 to 1) |
 
 Composite index and indicator displays are published with Vermont **municipality** geography units. These are recomputed for multiple **area frames**: statewide, 14 counties, and 12 VDH districts.
 
