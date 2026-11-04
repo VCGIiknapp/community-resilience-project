@@ -22,8 +22,8 @@ Thumbs.db
 # --- GIS: entire ArcGIS Pro project / geodatabase kept out of the repo ---
 gis/
 
-# --- Oversized reference (exceeds GitHub's 100 MB limit; publicly available from OECD) ---
-references/OECD (2008) - Handbook on Constructing Composite Indicators Methodology and UserGuide - 42495745.pdf
+# --- Reference literature (PDFs/docs kept out of the repo) ---
+references/
 
 # --- Regenerable / large data outputs (optional: uncomment to keep data out of the repo) ---
 # data/output/
