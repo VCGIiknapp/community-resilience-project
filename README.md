@@ -96,27 +96,7 @@ VDH municipality crosswalk (SDE geodatabase) ──► county / VDH district / H
 5. **Multi-year coverage** (2008–2012 through 2018–2022) enables trend analysis.
 6. **A clean deliverable layer already exists** in `dataAppendix/` — the distillation target is already partly built.
 
-## 7. Components that can be cut or consolidated
-
-The project is ~1,700 files (excluding the Python venv), **809 of them `.xlsx`** — overwhelmingly intermediate/dev artifacts. The sprawl, not the index, is the problem. Recommended cuts, roughly by confidence:
-
-**Cut / archive outright**
-- **`python/venv/`** — a committed virtual environment (~tens of MB). Never keep in a project; recreate from `requirements.txt`.
-- **Dead code generations in `python/`** — `cri.py`, `cri2.0.py`, `cri2017–2020.py`, `svi.py`, `svi1.0.py`, `*stacked.py` per year, `export2017–2020/`, `manual2017-2019/`, `backup.py`, `scratch.py`, `old_lowerinc.py`, `errorTEST.py`, `*TEST*`. These are superseded by the single current dev script. Keep **one** canonical script.
-- **Hundreds of intermediate `.xlsx`/`.csv`** in `python/` and `python/dashboardPython/` that are regenerable ETL outputs (raw/AGOformat/complete/suppressed variants per year). Keep only the current published period's feeder tables; regenerate the rest on demand.
-- **Duplicate/variant images & legends** at the root (multiple `*Indicator_Legend.png/jpg`, `oval*Transparant*`, `circleRedTransparant`, splash-screen JPGs) — keep one copy of each final asset.
-- **One-off exploration folders** — `multivarate analysis/`, `r_test/`, `moeExploration/`, `pdf2png/`, `criDataStackedManual/`, `physical_vulnerability_experiments.xls`, `stdev_normdist.xlsx` — research scaffolding, not part of the production pipeline. Archive.
-- **Scattered meeting notes** at root (`amyRedman*`, `weeklyMeetingDan*`, `*Sept19.docx`, `_ToDoList*`, `toDoNotes.txt`, `notes.docx`) — move to a single `/archive/meetings/` folder.
-
-**Consolidate (don't delete the content, dedupe the copies)**
-- **Methodology/user-guide versions** — `dataAppendix/` alone has `methodology.docx`, `CommunityResilienceMethodology.docx/.pdf`, `..._updated.docx`, plus `summarizedUserGuide` × 3. Keep the single latest `_updated` of each; archive the rest.
-- **Reference literature PDFs** (OECD Handbook is ~148 MB alone, Cutter, Rufat ×2, Becker, etc.) — valuable but belongs in a `/references/` folder, not the working root.
-- **Vendored ACS downloads** (`ACS downloads/`) — regenerable via API; keep zipped or drop.
-
-**Scope decision — resolved (2026-11-03)**
-- **Block-group geography has been removed** from the active pipeline. Geographies going forward are **Census tracts and municipalities only**; indices are still calculated at the four area frames (statewide, county, VDH district, hospital service area). Block-group output files were dropped from `data/output/`, and all live block-group references were stripped from `src/CommunityResilienceIndexCurrentDev.py` (the active loop now iterates `['tract', 'county subdivision']`). Block-group references that remain in the file are confined to the orphaned legacy section — see §8.
-
-## 8. Risks / things to verify before the next run
+## 7. Risks / things to verify before the next run
 
 These are observations from the **current dev script** (`CommunityResilienceIndexCurrentDev.py`) and should be confirmed against the published outputs:
 
@@ -125,7 +105,7 @@ These are observations from the **current dev script** (`CommunityResilienceInde
 - **Hardcoded absolute paths** (`D:/ScratchSpace/...`, `C:/Users/Ian.Knapp/OneDrive - .../dashboardPython/...`, UNC SDE paths) make the pipeline machine-bound and single-owner. Parameterize for continuity.
 - **Year labels are embedded in filenames**, not derived from a single `year` parameter — easy to mismatch output windows.
 
-## 9. Recommended target structure
+## 8. Recommended target structure
 
 ```
 CommunityResilienceIndex/
