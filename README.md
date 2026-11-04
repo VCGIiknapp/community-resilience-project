@@ -63,8 +63,7 @@ The **Overall Theme** = all 11. Variable-level detail (table IDs, numerators/den
 
 ## 5. ETL overview
 
-**Engine:** `D:\PythonScripts\ScriptsUnderDevelopment\CRI\CommunityResilienceIndexCurrentDev.py` (~7,260 lines, Python + `pandas`, `numpy`, `scipy.stats.gmean`, `arcpy`).
-
+**Engine:** [src/CommunityResilienceIndexCurrentDev.py](src/CommunityResilienceIndexCurrentDev.py)
 ```
 Census ACS5 API  ──(requests, by variable ID)──►  per-indicator DataFrames
         │                                                  │

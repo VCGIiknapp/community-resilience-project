@@ -3,6 +3,8 @@
 config/CensusAPI.txt
 # Real UNC/network paths; commit network_paths.example.json as the template instead
 config/network_paths.json
+# Internal porting/archive notes (references original on-prem folder layout)
+PORTED_MANIFEST.md
 
 # --- Python ---
 __pycache__/
