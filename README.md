@@ -1,6 +1,6 @@
 # Vermont Community Resilience Index (VT CRI) — Project Summary
 
-*Distilled overview prepared 2026-11-03 from the project's own methodology, user guide, variable appendices, and the current production ETL script. Intended as a single orientation document for anyone inheriting or evaluating this project.*
+*Overview updated 2026-11-04 to reflect the refactored, single-index, municipality-only ETL. Intended as a single orientation document for anyone inheriting or evaluating this project.*
 
 ---
 
@@ -16,107 +16,117 @@ The application has **two components**:
 
 | Component | What it shows | Statistic |
 |-----------|---------------|-----------|
-| **1. Composite Index** | A single 0–100 resilience score per municipality | Geometric mean of the 11 indicator percentile ranks, re-ranked 0–100 |
-| **2. Indicator Displays** | Spatial distribution of each individual indicator, plus race/ethnicity disaggregation | Standard mean difference (−1 to 1) |
+| **1. Composite Index** | A single 0–100 resilience score per municipality | Geometric mean of the indicator percentile ranks, re-ranked 0–100 |
+| **2. Indicator Displays** | Spatial distribution of each individual indicator, plus a BIPOC / White race disaggregation | Standard mean difference (−1 to 1) |
 
-Composite index and indicator displays are published with Vermont **municipality** geography units. These are recomputed for multiple **area frames**: statewide, 14 counties, and 12 VDH districts.
+There is **one composite index** (no sub-themes), published at the Vermont **municipality** geography unit only (census tracts were removed from the workflow). Both components are recomputed for each **area frame**: statewide, 14 counties, 12 VDH districts, and hospital service areas (HSA). The index score, percentile ranks, and standard mean differences are each reported per frame.
 
 ## 2. Purpose & justification
 
 - **Audience:** Vermont Department of Health officials and local public-health planners.
-- **Need it fills:** Translates dozens of Census variables into one defensible, comparable measure of how well a community can absorb and recover from a health shock, surfaced at a granularity (tract/town) that statewide averages hide.
-- **Methodological lineage:** Follows the **CDC Social Vulnerability Index** precedent (8 of 11 indicators are CDC-influenced) and the **OECD Handbook on Constructing Composite Indicators**. The design is documented against peer-reviewed literature (Cutter 1996, Flanagan 2011, Beccari 2016, Rufat 2021, etc.).
-- **Equity framing:** Race/ethnicity disaggregation (8 of 11 indicators) is a deliberate health-equity feature, reported at the area-frame level to protect small-population groups.
+- **Need it fills:** Translates dozens of Census variables into one defensible, comparable measure of how well a community can absorb and recover from a health shock, surfaced at a municipal granularity that statewide averages hide.
+- **Methodological lineage:** Follows the **CDC Social Vulnerability Index** precedent and the **OECD Handbook on Constructing Composite Indicators**. The design is documented against peer-reviewed literature (Cutter 1996, Flanagan 2011, Beccari 2016, Rufat 2021, etc.).
+- **Equity framing:** A **BIPOC / White** race disaggregation (plus age and sex where available) is a deliberate health-equity feature, reported only at the area-frame level with small-count suppression to protect small-population groups.
 
 ## 3. The 11 indicators
 
 All indicators are **equally weighted** (the most common and most defensible default per Beccari 2016). Each is built from **ACS 5-year estimates** pulled via the Census API.
 
 1. Supportive Income — % population with income > 200% of Federal poverty level *(C17002)*
-2. Employment — % adult population employed *(B23001 / DP03)*
+2. Employment — % adult population employed *(B23001)*
 3. Without Public Assistance — % households not receiving public assistance *(B19058)*
-4. Median Household Income — inflation-adjusted *(B19013)*
-5. High School Education — % adults 25+ with HS diploma+ *(B15001 / DP02)*
-6. Health Insurance — % population insured *(B27010 / DP03)*
-7. Manageable Housing Costs — % housing units w/ costs < 30% of income *(B25070 + B25095 / DP04)*
-8. Broadband Internet — % households w/ computer + broadband *(B28005 / DP02)*
+4. Median Household Income — inflation-adjusted dollar value *(B19013)*
+5. High School Education — % adults 25+ with HS diploma+ *(B15001)*
+6. Health Insurance — % population insured *(B27010)*
+7. Manageable Housing Costs — % housing units w/ costs < 30% of income *(B25070 + B25095)*
+8. Broadband Internet — % households w/ computer + broadband *(B28005)*
 9. Owner-Occupied Homes — % owner-occupied units *(B25003)*
 10. English Proficiency — % population speaking English "well" or better *(B16005)*
-11. Vehicle Access — % housing units with a vehicle *(B25044 / DP04)*
+11. Vehicle Access — % housing units with a vehicle *(B25044)*
 
-All 11. Variable-level detail (table IDs, numerators/denominators, available years 2008–2012 → 2018–2022) is in `dataAppendix/IndexVariables_Updated.xlsx` and `DisaggregatedVariables.xlsx`.
+Ten indicators are percentages; **Median Household Income is a dollar value** (a count-path indicator with no denominator). Variable-level detail (table IDs, numerators/denominators) is in `data/reference/VDH_CRI_IndexVariableAppendix.xlsx`; the disaggregation variables are in `data/reference/VDH_CRI_DisaggreatedVariableAppendix.xlsx` and `config/demographics_variables.json`.
+
+**Broadband and the earliest window:** ACS table `B28005` (and the `B28009` race iterations) did not exist before ~2013, so it is unavailable for the **2010–2014** window. The script detects this at runtime, drops Broadband Internet for that window only, and builds that window's composite index from the remaining **10 indicators**.
 
 ## 4. Methodology in four steps
 
-1. **Identify variables** — map each indicator to specific ACS table variables (numerators/denominators).
-2. **Preprocess indicators** — aggregate variables → a normalized rate per geography (numerator ÷ total population) → convert to **percentile rank (0–100)**, computed *separately per geography unit and per area frame* (because percentile rank is relative to the units included).
-3. **Calculate index** — combine the 11 percentile ranks with a **geometric mean** (multiply, take the *n*th root), then re-rank 0–100. Repeated for each theme and each area frame.
+1. **Identify variables** — map each indicator to specific ACS table variables (numerators/denominators; a household-count weight for median income).
+2. **Preprocess indicators** — aggregate variables → a normalized rate per municipality (numerator ÷ denominator) → convert to **percentile rank (0–100)**, computed *separately per area frame* (percentile rank is relative to the units included in the frame).
+3. **Calculate index** — combine the indicator percentile ranks with a **geometric mean** (multiply, take the *n*th root), then re-rank 0–100 within each area frame.
 4. **Postprocess** — classify into 4 quantile classes: Low / Medium-Low / Medium-High / High Resilience, symbolized on the maps.
 
-**Why geometric mean (the key methodological choice):** It is **non-compensatory** — a high score on one indicator does *not* cancel out a low score on another. A community weak in several areas cannot hide behind one strong indicator, and improvements to low-scoring indicators move the needle more. This better reflects whole-population resilience than a simple average would.
+**Why geometric mean (the key methodological choice):** It is **non-compensatory** — a high score on one indicator does *not* cancel out a low score on another. A community weak in several areas cannot hide behind one strong indicator, and improvements to low-scoring indicators move the needle more.
 
-**Indicator Displays** use **standard mean difference**: `(geography value − area-frame mean) ÷ area-frame standard deviation`, giving a −1 to 1 value showing how far above/below the local mean each place sits.
+**Indicator Displays** use **standard mean difference**: `(municipality value − area-frame mean) ÷ area-frame standard deviation`, giving a roughly −1 to 1 value showing how far above/below the frame mean each place sits. Statewide and county frame means come directly from the ACS aggregate for that frame; **VDH district and HSA frame means are built from the member municipalities** — rate indicators sum numerators and denominators; median income uses a household-count-weighted mean.
+
+**Race disaggregation (BIPOC / White).** Race resolves to exactly two groups at every frame: a composite **BIPOC** (all non-white ACS race iterations combined — summed numerators/denominators for rate indicators, a household-weighted mean of medians for Median Household Income) and **White**. Age and sex groups are reported where ACS provides them. **Suppression is applied only at the area-frame level** (never to individual towns): municipalities under the 25-count threshold are still pooled into their district/HSA aggregate, and a frame-level group is suppressed only if its own combined count (denominator, or household weight for median income) is below 25.
 
 ## 5. ETL overview
 
 **Engine:** [src/CommunityResilienceIndexCurrentDev.py](src/CommunityResilienceIndexCurrentDev.py)
+
 ```
-Census ACS5 API  ──(requests, by variable ID)──►  per-indicator DataFrames
+Census ACS5 API  ──(requests, by variable ID)──►  per-indicator DataFrames (municipality / county / statewide)
         │                                                  │
-VDH municipality crosswalk (SDE geodatabase) ──► county / VDH district  / statewide rollups
+VDH municipality crosswalk (SDE) ──► county / VDH district / HSA / statewide rollups
         │                                                  │
         ▼                                                  ▼
-  Normalize (num ÷ denom)  ►  Percentile rank (pandas .rank(pct=True)*100)
-        │                          per geography × per area frame
-        ▼
-  Geometric mean per theme (scipy gmean)  ►  re-rank 0–100  ►  quantile class
+  Normalize (num ÷ denom)  ►  Percentile rank (pandas .rank(pct=True)*100), per area frame
         │
         ▼
-  ~20 Excel/CSV feeder tables per 5-year period  ──►  ArcGIS Pro (join to tract/town layers)
-        │                                                  (CommunityResilienceIndex.aprx)
+  Geometric mean of all indicator ranks (scipy gmean)  ►  re-rank 0–100  ►  quantile class
+        │
         ▼
-  ArcGIS Online  ──►  Experience Builder application
+  Standard mean difference per indicator per frame   +   BIPOC / White disaggregation
+        │
+        ▼
+  One appended Excel workbook per output type (all 5-year windows stacked)  ──►  ArcGIS Pro / ArcGIS Online
 ```
 
-- **Inputs:** Census API key (`CensusAPI.txt`); municipality crosswalk table (`VDH_VT_MunicipalitiesCrosswalk` in SDE).
-- **Geographies computed:** County subdivision (municipality), county, VDH district, statewide.
-- **Outputs:** written to `python/dashboardPython/` as stacked Excel tables per 5-year window (`2008-2012` … `2018-2022`, plus `2010s`/`2020s` combined): indicator tables, index (geometric) tables, disaggregated demographics (county/district/statewide), population references, and "unpopulated"/suppressed tables.
-- **Final clean deliverables:** `dataAppendix/` holds the published methodology, user guide, variable appendices, and the index CSVs (`MunicipalitiesIndexData.csv`, `*Indicators.csv`).
+- **Structure:** the pipeline runs as `run_period(end_year)` and a driver loop over the `YEARS` list at the top of the script. Each window's results are **appended** into one combined workbook per output type.
+- **Windows:** `YEARS = [2014, 2019, 2024]` → the 5-year ACS windows **2010-2014, 2015-2019, 2020-2024**. Edit the list to add/remove windows. Every output row carries an **`ACS 5-Year`** vintage column.
+- **Inputs:** Census API key (`config/CensusAPI.txt`); municipality crosswalk feature class and other UNC paths (`config/network_paths.json`, git-ignored); disaggregation variables (`config/demographics_variables.json`).
+- **Geographies computed:** municipality (county subdivision); area frames: statewide, county, VDH district, hospital service area.
+- **Outputs:** written to `data/output/` as one combined workbook per deliverable:
+  - `townsIndexGeometric.xlsx` — single composite index (one score per municipality per area frame)
+  - `townsIndicators.xlsx` — per-indicator value, frame means, percentile ranks, and standard mean differences
+  - `townsUnpopulated.xlsx` — zero/null-population municipalities
+  - `statewideDisaggregated.xlsx`, `countiesDisaggregated.xlsx`, `districtsDisaggregated.xlsx`, `hospitalsDisaggregated.xlsx` — BIPOC / White (+ age/sex) disaggregation per frame
 
 ## 6. Core strengths (what to protect)
 
-1. **Sound, well-documented methodology.** The composite-index design is grounded in CDC SVI precedent and the OECD Handbook, with an explicit, defensible rationale for every major choice (equal weighting, geometric mean, percentile ranking, area frames). The `dataAppendix` methodology + user guide are genuinely strong and publication-ready.
-2. **The composite index itself** — three themes × multiple area frames × two geographies — is a legitimately useful, flexible analytic product.
-3. **Health-equity disaggregation.** Race/ethnicity breakdowns with small-population protection is a meaningful differentiator over the base CDC SVI.
-4. **Full reproducibility from source.** Everything derives from documented ACS variables via API; the variable appendices make the pipeline auditable end-to-end.
-5. **Multi-year coverage** (2008–2012 through 2018–2022) enables trend analysis.
-6. **A clean deliverable layer already exists** in `dataAppendix/` — the distillation target is already partly built.
+1. **Sound, well-documented methodology** — grounded in CDC SVI precedent and the OECD Handbook, with an explicit rationale for every major choice (equal weighting, geometric mean, percentile ranking, area frames).
+2. **A single, flexible composite index** across multiple area frames at municipal granularity.
+3. **Health-equity disaggregation** — a BIPOC / White breakdown with frame-level small-count suppression.
+4. **Full reproducibility from source** — everything derives from documented ACS variables via the API; the variable appendices and `config/demographics_variables.json` make the pipeline auditable end-to-end.
+5. **Multi-year coverage** (2010-2014 through 2020-2024, stacked in one file) enables trend analysis.
 
-## 7. Risks / things to verify before the next run
+## 7. Status & things to verify before the next publication
 
-These are observations from the **current dev script** (`CommunityResilienceIndexCurrentDev.py`) and should be confirmed against the published outputs:
+The ETL is now a single, function-structured, municipality-only pipeline (the former tract logic, sub-index themes, and orphaned legacy code have been removed). Before publishing a run, confirm the following against a prior published period:
 
-- **The script is a 7,260-line monolith with no functions**, and only the top ~511 lines are live. The active dict-driven "Main Loop" acquires ACS data, builds `geographyDataframes`, computes thematic geometric means, and writes `thematicDataFrame` to `D:/ScratchSpace/geog_data_output.csv`. **Everything below ~line 520 is orphaned legacy code**: it references `tractsPercentile`, `incomeTownsDataFrame`, `incomeBlockGroupsDataFrame`, etc., none of which are created in this file (first occurrence = first use), so run top-to-bottom it would `NameError` at line 532. The dashboard feeder tables in `data/output/` were produced by the *archived* prior versions of the script, not this one. The remaining ~230 block-group references all live in this dead section. **Decision needed:** wire the legacy index/export logic to `thematicDataFrame` (the real refactor), or delete the orphaned section outright. Until then, this file does not by itself regenerate the published outputs.
-- **Possible column-list errors in the index definitions** (worth auditing): in the statewide/tract theme lists, `ownerOccupiedHousingStatewidePercentile` appears **twice** and `vehicleAccessStatewidePercentile` appears **absent** from `stateOverall`/`stateHousing`; and `districtHousing` / `hospitalHousing` appear to reference each other's percentile columns (swapped). If these are live, the statewide Overall/Housing index may be dropping Vehicle Access and double-counting Owner-Occupied. Verify against intended methodology before the next publication.
-- **Hardcoded absolute paths** (`D:/ScratchSpace/...`, `C:/Users/Ian.Knapp/OneDrive - .../dashboardPython/...`, UNC SDE paths) make the pipeline machine-bound and single-owner. Parameterize for continuity.
-- **Year labels are embedded in filenames**, not derived from a single `year` parameter — easy to mismatch output windows.
+- **Live-run validation.** The refactor has been syntax-checked but not executed end-to-end here (it requires `arcpy`, the Census API key, and the SDE crosswalk). Diff the combined outputs against a prior published period before release.
+- **BIPOC median definition.** The BIPOC group for Median Household Income is a **household-count-weighted mean** of the non-white race medians (medians cannot be summed). Confirm this matches the intended methodology.
+- **Broadband gap in 2010-2014.** The composite index for that window is built from 10 indicators, and broadband percentile columns are empty (NaN) for those rows in the combined index file — expected, but note it when the dashboard consumes the file.
+- **2021-2025 window.** Not currently in `YEARS`; add `2025` once the ACS 5-year release is available.
+- **HSA in the dashboard.** The script still computes the hospital-service-area frame; confirm which frames the current dashboard surfaces.
 
-## 8. Recommended target structure
+## 8. Repository layout
 
 ```
-CommunityResilienceIndex/
-├── README.md                     ← this summary, trimmed
-├── src/cri_pipeline.py           ← ONE refactored script (functions, params)
-├── config/                       ← API key ref, year, paths, crosswalk
+Community Resilience Project/
+├── README.md                     ← this summary
+├── src/
+│   └── CommunityResilienceIndexCurrentDev.py   ← the ETL (functions, YEARS loop)
+├── config/                       ← CensusAPI.txt, network_paths.json, demographics_variables.json (keys/paths git-ignored)
 ├── data/
-│   ├── reference/                ← crosswalk, ACS variable appendices
-│   └── output/<period>/          ← current published feeder tables only
-├── docs/                         ← methodology, user guide (latest only), appendices
-├── gis/                          ← .aprx, .atbx, .gdb, published layers
-├── references/                   ← literature PDFs
-└── archive/                      ← everything cut above, zipped, out of the way
+│   ├── reference/                ← crosswalk + ACS variable appendices
+│   └── output/                   ← combined multi-year deliverables (one workbook per type)
+├── dashboard/                    ← dashboard mockups + design notes
+├── gis/                          ← .aprx, .atbx, .gdb, published layers (git-ignored)
+└── references/                   ← literature PDFs (git-ignored)
 ```
 
 ---
 
-*Sources: `dataAppendix/CommunityResilienceMethodology_updated.docx`, `summarizedUserGuide_updated.docx`, `IndexVariables_Updated.xlsx`, `DisaggregatedVariables.xlsx`, and `CommunityResilienceIndexCurrentDev.py`.*
+*Sources: project methodology and user guide, the ACS variable appendices in `data/reference/`, `config/demographics_variables.json`, and `src/CommunityResilienceIndexCurrentDev.py`.*
